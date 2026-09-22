@@ -14,12 +14,6 @@ def create_parser():
         action="store_true",
         help="Fetch remote tags before checking"
     )
-    check_parser.add_argument(
-        "-m"
-        "--message",
-        type=str,
-        help="Give message for the tag"
-    )
 
     subparsers.add_parser("sync")
 
@@ -27,6 +21,17 @@ def create_parser():
     bump_parser.add_argument(
         "part",
         choices=["major", "minor", "patch"],
+    )
+    bump_parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force bump even if version mismatch occurs"
+    )
+    bump_parser.add_argument(
+        "-m",
+        "--message",
+        type=str,
+        help="Give message for the tag"
     )
 
     return parser

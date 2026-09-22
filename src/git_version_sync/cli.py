@@ -8,7 +8,11 @@ def main():
     try:
         match args.command:
             case 'bump':
-                print(do_bump(args.part, args.message))
+                print(do_bump(
+                    args.part,
+                    message=args.message,
+                    force=args.force
+                ))
             case 'sync':
                 ...
             case 'check':

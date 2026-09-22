@@ -50,12 +50,12 @@ def get_new_patch(version: Version):
 
 BumpType = Literal["major", "minor", "patch"]
 
-def do_bump(bump_type: BumpType, message: str|None = None):
+def do_bump(bump_type: BumpType, message: str|None = None, force: bool = False):
     config_tag = get_config_tag()
     local_tags = get_local_tags()
     highest_local_tag = parse_highest_verion(local_tags)
 
-    if config_tag != highest_local_tag:
+    if config_tag != highest_local_tag and not force:
         raise RuntimeError(
             f"Version mismatch detected!\n"
             f"  Config: v{config_tag}\n"
