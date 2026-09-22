@@ -7,13 +7,13 @@ from typing import Literal
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_git_path
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
+    msg = message if message and message.strip() else f"bump version to v{new_version}"
     command = [
         'git',
         'tag',
         '-a', f'v{new_version}',
+        '-m', msg
     ]
-    if message and message.strip():
-        command = command + ['-m', message]
 
     subprocess.run(
         command,
@@ -22,7 +22,7 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
         check=True
     )
 
-def bump_config_version(new_version: Version, config_path: Path):
+def bump_config_version(new_version: Version, config_path: Path) -> None:
     content = config_path.read_text(encoding="utf-8")
 
     pattern = r'^(version\s*=\s*["\']).*?(["\'])'
@@ -35,8 +35,9 @@ def bump_config_version(new_version: Version, config_path: Path):
 
     config_path.write_text(new_content, encoding="utf-8")
 
-def bump_version(new_version: Version, config_path: Path):
+def bump_version(new_version: Version, config_path: Path) -> None:
     bump_git_tag(new_version)
+    bump_config_version(new_version, config_path)
 
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"
@@ -67,15 +68,17 @@ def do_bump(bump_type: BumpType):
     if not config_path.exists():
         raise RuntimeError(f"Config file not found: {config_path}")
 
-    new_version = None
+    version = None
     match bump_type:
         case "major":
-            new_version = get_new_major(config_tag)
+            version = get_new_major(config_tag)
         case "minor":
-            new_version = get_new_minor(config_tag)
+            version = get_new_minor(config_tag)
         case "patch":
-            new_version = get_new_patch(config_tag)
+            version = get_new_patch(config_tag)
 
-    new_verwion = Version(new_version)
+    new_verwion = Version(version)
 
-    bump_version(new_version, config_path)
+    bump_version(new_verwion, config_path)
+
+    return f"Success bump version to v{new_verwion}"
