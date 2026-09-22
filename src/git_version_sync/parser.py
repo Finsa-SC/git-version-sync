@@ -53,6 +53,12 @@ def create_parser():
         help="Force bump even if version mismatch occurs"
     )
     bump_parser.add_argument(
+        "-p",
+        "--push",
+        action="store_true",
+        help="Automatically push commit and the new tag to remote"
+    )
+    bump_parser.add_argument(
         "-m",
         "--message",
         type=str,

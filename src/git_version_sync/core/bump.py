@@ -2,30 +2,9 @@ import subprocess, re
 from packaging.version import Version
 from typing import Literal
 
+from .git import commit_config_change, push_to_remote
 from .check import parse_highest_verion, get_local_tags, get_config_tag
 from ..utils import get_config_path
-
-def commit_config_change(new_version: Version) -> None:
-    subprocess.run([
-        'git', 'add', str(get_config_path())],
-        capture_output=True,
-        text=True,
-        check=True
-    )
-
-    try:
-        commit_msg = f"chore({get_config_path().name}): bump version to v{new_version}"
-        subprocess.run(
-            ['git', 'commit', '-m', commit_msg],
-            capture_output=True,
-            text=True,
-            check=True
-        )
-    except subprocess.CalledProcessError as e:
-        output = (e.stdout or "") + (e.stderr or "")
-        if "nothing to commit" in output:
-            return
-        raise RuntimeError(f"Git commit failed: \n{e.stderr.strip()}") from e
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
@@ -57,10 +36,13 @@ def bump_config_version(new_version: Version) -> None:
 
     config_path.write_text(new_content, encoding="utf-8")
 
-def bump_version(new_version: Version, message: str|None=None) -> None:
+def bump_version(new_version: Version, message: str|None=None, push: bool=False) -> None:
     bump_config_version(new_version)
     commit_config_change(new_version)
     bump_git_tag(new_version, message)
+
+    if push:
+        push_to_remote(new_version)
 
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"
@@ -73,7 +55,12 @@ def get_new_patch(version: Version):
 
 BumpType = Literal["major", "minor", "patch"]
 
-def do_bump(bump_type: BumpType, message: str|None = None, force: bool = False):
+def do_bump(
+        bump_type: BumpType,
+        message: str|None = None,
+        force: bool = False,
+        push: bool = False
+):
     config_tag = get_config_tag()
     local_tags = get_local_tags()
     highest_local_tag = parse_highest_verion(local_tags)
@@ -106,6 +93,6 @@ def do_bump(bump_type: BumpType, message: str|None = None, force: bool = False):
 
     new_version = Version(new_version)
 
-    bump_version(new_version, message)
+    bump_version(new_version, message, push)
 
     return f"Success bump version to v{new_version}"

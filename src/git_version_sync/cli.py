@@ -12,7 +12,8 @@ def main():
                 print(do_bump(
                     args.part,
                     message=args.message,
-                    force=args.force
+                    force=args.force,
+                    push=args.push
                 ))
             case 'sync':
                 print(do_sync(args.to_git, args.to_config))
