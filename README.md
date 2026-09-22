@@ -7,6 +7,7 @@ A command-line tool to synchronize semantic versions between Git tags and `pypro
 - **Check** version status and consistency between Git tags and `pyproject.toml`
 - **Sync** version discrepancies with flexible sync directions
 - **Bump** versions following semantic versioning (major, minor, patch)
+- **Auto Push** option to push commits and tags directly to remote
 - **Custom annotations** for Git tags
 - **Force mode** for bypassing version mismatches
 
@@ -16,10 +17,22 @@ A command-line tool to synchronize semantic versions between Git tags and `pypro
 - Python >= 3.11
 - Git
 
+### Via PyPI (Recommended)
+
+```bash
+pip install git-version-sync
+```
+
+Or with pipx for isolated installation:
+
+```bash
+pipx install git-version-sync
+```
+
 ### From Source
 
 ```bash
-git clone https://github.com/Finsa-SC/git-version-sync
+git clone <repository-url>
 cd git-version-sync
 pip install -e .
 ```
@@ -59,6 +72,7 @@ git-version-sync bump {major|minor|patch}
 
 **Options:**
 - `-f, --force` - Force bump even if version mismatch occurs
+- `-p, --push` - Automatically push commit and tag to remote
 - `-m, --message MESSAGE` - Custom annotation message for the Git tag
 
 ## Examples
@@ -75,13 +89,14 @@ $ git-version-sync bump patch
 Success bump version to v1.0.1
 ```
 
-### Bump minor version with custom message
+### Bump minor version with custom message and auto-push
 ```bash
-$ git-version-sync bump minor -m "Add new features"
+$ git-version-sync bump minor -m "Add new features" -p
 Success bump version to v1.1.0
+Pushing commit and tag to remote...
 ```
 
-### Bump major version forcefully
+### Bump major version with force flag
 ```bash
 $ git-version-sync bump major -f
 Success bump version to v2.0.0
