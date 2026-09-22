@@ -13,13 +13,19 @@ def commit_config_change(new_version: Version) -> None:
         check=True
     )
 
-    commit_msg = f"chore({get_config_path().stem}): bump version to v{new_version}"
-    subprocess.run(
-        ['git', 'commit', '-m', commit_msg],
-        capture_output=True,
-        text=True,
-        check=True
-    )
+    try:
+        commit_msg = f"chore({get_config_path().name}): bump version to v{new_version}"
+        subprocess.run(
+            ['git', 'commit', '-m', commit_msg],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        output = (e.stdout or "") + (e.stderr or "")
+        if "nothing to commit" in output:
+            return
+        raise RuntimeError(f"Git commit failed: \n{e.stderr.strip()}") from e
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
@@ -52,9 +58,9 @@ def bump_config_version(new_version: Version) -> None:
     config_path.write_text(new_content, encoding="utf-8")
 
 def bump_version(new_version: Version, message: str|None=None) -> None:
-    bump_git_tag(new_version, message)
-    commit_config_change(new_version)
     bump_config_version(new_version)
+    commit_config_change(new_version)
+    bump_git_tag(new_version, message)
 
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"
