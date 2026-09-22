@@ -63,22 +63,26 @@ def do_bump(bump_type: BumpType, message: str|None = None, force: bool = False):
             f"Please run `git-version-sync sync` first or fix the mismatch."
         )
 
+    if highest_local_tag:
+        old_version = max(config_tag, highest_local_tag)
+    else:
+        old_version = config_tag
+
     config_path = get_git_path() / "pyproject.toml"
 
     if not config_path.exists():
         raise RuntimeError(f"Config file not found: {config_path}")
 
-    version = None
     match bump_type:
         case "major":
-            version = get_new_major(config_tag)
+            new_version = get_new_major(old_version)
         case "minor":
-            version = get_new_minor(config_tag)
+            new_version = get_new_minor(old_version)
         case "patch":
-            version = get_new_patch(config_tag)
+            new_version = get_new_patch(old_version)
 
-    new_verwion = Version(version)
+    new_version = Version(new_version)
 
-    bump_version(new_verwion, config_path, message)
+    bump_version(new_version, config_path, message)
 
-    return f"Success bump version to v{new_verwion}"
+    return f"Success bump version to v{new_version}"
