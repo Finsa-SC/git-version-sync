@@ -1,0 +1,17 @@
+[project]
+name = "git-version-sync"
+version = "0.1.0"
+description = "Tools to sync and update semantic versions"
+readme = "README.md"
+authors = [
+    { name = "Finsa-SC", email = "finsakusumaputra@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = []
+
+[project.scripts]
+git-version-sync = "git_version_sync:main"
+
+[build-system]
+requires = ["uv_build>=0.12.17,<0.13.0"]
+build-backend = "uv_build"
