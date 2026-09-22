@@ -6,17 +6,24 @@ def create_parser():
         description="Sync Git tags and pyproject.toml versions.",
     )
 
-    subparsers = parser.add_subparsers(dest="command")
+    subparsers = parser.add_subparsers(dest="command", required=True)
 
-    check_parser = subparsers.add_parser("check")
+    # Subcommand: check
+    check_parser = subparsers.add_parser(
+        "check",
+        help="Check and compare current version status between Git tags and pyproject.toml"
+    )
     check_parser.add_argument(
         "--fetch",
         action="store_true",
         help="Fetch remote tags before checking"
     )
 
-    sync_parser = subparsers.add_parser("sync", help="Sync version between pyproject.toml and Git tags")
-
+    # Subcommand: sync
+    sync_parser = subparsers.add_parser(
+        "sync",
+        help="Sync version discrepancies between pyproject.toml and Git tags"
+    )
     sync_group = sync_parser.add_mutually_exclusive_group()
     sync_group.add_argument(
         "--to-git",
@@ -29,12 +36,18 @@ def create_parser():
         help="Force Git tag to match the version in pyproject.toml"
     )
 
-    bump_parser = subparsers.add_parser("bump")
+    # Subcommand: bump
+    bump_parser = subparsers.add_parser(
+        "bump",
+        help="Increment version in pyproject.toml and create a corresponding Git tag"
+    )
     bump_parser.add_argument(
         "part",
         choices=["major", "minor", "patch"],
+        help="Version part to increment (major, minor, or patch)"
     )
     bump_parser.add_argument(
+        "-f",
         "--force",
         action="store_true",
         help="Force bump even if version mismatch occurs"
@@ -43,7 +56,7 @@ def create_parser():
         "-m",
         "--message",
         type=str,
-        help="Give message for the tag"
+        help="Custom annotation message for the created Git tag"
     )
 
     return parser
