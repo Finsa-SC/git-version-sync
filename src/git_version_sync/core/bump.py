@@ -35,8 +35,8 @@ def bump_config_version(new_version: Version, config_path: Path) -> None:
 
     config_path.write_text(new_content, encoding="utf-8")
 
-def bump_version(new_version: Version, config_path: Path) -> None:
-    bump_git_tag(new_version)
+def bump_version(new_version: Version, config_path: Path, message: str|None=None) -> None:
+    bump_git_tag(new_version, message)
     bump_config_version(new_version, config_path)
 
 def get_new_major(version: Version) -> str:
@@ -50,7 +50,7 @@ def get_new_patch(version: Version):
 
 BumpType = Literal["major", "minor", "patch"]
 
-def do_bump(bump_type: BumpType):
+def do_bump(bump_type: BumpType, message: str|None = None):
     config_tag = get_config_tag()
     local_tags = get_local_tags()
     highest_local_tag = parse_highest_verion(local_tags)
@@ -79,6 +79,6 @@ def do_bump(bump_type: BumpType):
 
     new_verwion = Version(version)
 
-    bump_version(new_verwion, config_path)
+    bump_version(new_verwion, config_path, message)
 
     return f"Success bump version to v{new_verwion}"
