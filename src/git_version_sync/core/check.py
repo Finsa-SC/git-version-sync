@@ -1,17 +1,7 @@
-from pathlib import Path
 import subprocess, tomllib
 from packaging.version import Version
+from git_version_sync.utils import get_git_path, get_config_path
 
-def get_git_path() -> Path:
-    command = ["git", "rev-parse", "--show-toplevel"]
-    result = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        check=True
-    )
-
-    return Path(result.stdout.strip())
 
 def get_local_tags() -> set[str]:
     command = ["git", "tag", "--list"]
@@ -38,10 +28,7 @@ def parse_highest_verion(tags: set[str]) -> Version|None:
     return max(valid_version) if valid_version else None
 
 def get_config_tag() -> Version:
-    config_path = get_git_path() / "pyproject.toml"
-
-    if not config_path.exists():
-        raise RuntimeError(f"Config file not found: {config_path}")
+    config_path = get_config_path()
 
     with config_path.open('rb') as f:
         config = tomllib.load(f)

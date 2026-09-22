@@ -1,10 +1,10 @@
 import subprocess, re
-import tomllib
-from pathlib import Path
 from packaging.version import Version
 from typing import Literal
 
-from .check import parse_highest_verion, get_local_tags, get_config_tag, get_git_path
+from .check import parse_highest_verion, get_local_tags, get_config_tag
+from ..utils import get_config_path
+
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
@@ -22,7 +22,8 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
         check=True
     )
 
-def bump_config_version(new_version: Version, config_path: Path) -> None:
+def bump_config_version(new_version: Version) -> None:
+    config_path = get_config_path()
     content = config_path.read_text(encoding="utf-8")
 
     pattern = r'^(version\s*=\s*["\']).*?(["\'])'
@@ -35,9 +36,9 @@ def bump_config_version(new_version: Version, config_path: Path) -> None:
 
     config_path.write_text(new_content, encoding="utf-8")
 
-def bump_version(new_version: Version, config_path: Path, message: str|None=None) -> None:
+def bump_version(new_version: Version, message: str|None=None) -> None:
     bump_git_tag(new_version, message)
-    bump_config_version(new_version, config_path)
+    bump_config_version(new_version)
 
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"
@@ -68,7 +69,7 @@ def do_bump(bump_type: BumpType, message: str|None = None, force: bool = False):
     else:
         old_version = config_tag
 
-    config_path = get_git_path() / "pyproject.toml"
+    config_path = get_config_path()
 
     if not config_path.exists():
         raise RuntimeError(f"Config file not found: {config_path}")
@@ -83,6 +84,6 @@ def do_bump(bump_type: BumpType, message: str|None = None, force: bool = False):
 
     new_version = Version(new_version)
 
-    bump_version(new_version, config_path, message)
+    bump_version(new_version, message)
 
     return f"Success bump version to v{new_version}"
