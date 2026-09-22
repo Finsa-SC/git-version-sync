@@ -5,6 +5,21 @@ from typing import Literal
 from .check import parse_highest_verion, get_local_tags, get_config_tag
 from ..utils import get_config_path
 
+def commit_config_change(new_version: Version) -> None:
+    subprocess.run([
+        'git', 'add', str(get_config_path())],
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
+    commit_msg = f"chore({get_config_path().stem}): bump version to v{new_version}"
+    subprocess.run(
+        ['git', 'commit', '-m', commit_msg],
+        capture_output=True,
+        text=True,
+        check=True
+    )
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
@@ -38,6 +53,7 @@ def bump_config_version(new_version: Version) -> None:
 
 def bump_version(new_version: Version, message: str|None=None) -> None:
     bump_git_tag(new_version, message)
+    commit_config_change(new_version)
     bump_config_version(new_version)
 
 def get_new_major(version: Version) -> str:
