@@ -15,7 +15,7 @@ def main():
                     force=args.force
                 ))
             case 'sync':
-                do_sync(args.to_git, args.to_config)
+                print(do_sync(args.to_git, args.to_config))
             case 'check':
                 print(do_check(args.fetch))
             case _:
