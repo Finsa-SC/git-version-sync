@@ -63,7 +63,7 @@ def do_check() -> str:
     else:
         return (
             f"Version mismatch\n"
-            f"Git:    {git_tag}"
+            f"Git:    {git_tag}\n"
             f"Config: {config_tag}"
         )
 
