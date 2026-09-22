@@ -1,1 +1,1 @@
-# from check import
+from check import do_check

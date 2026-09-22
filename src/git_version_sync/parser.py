@@ -8,6 +8,13 @@ def create_parser():
 
     subparsers = parser.add_subparsers(dest="command")
 
+    check_parser = subparsers.add_parser("check")
+    check_parser.add_argument(
+        "--fetch",
+        action="store_true",
+        help="Fetch remote tags before checking"
+    )
+
     subparsers.add_parser("sync")
 
     bump_parser = subparsers.add_parser("bump")

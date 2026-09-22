@@ -13,7 +13,7 @@ def get_git_path() -> Path:
 
     return Path(result.stdout.strip())
 
-def get_tag_list() -> list[str]:
+def get_local_tags() -> set[str]:
     command = ["git", "tag", "--list"]
     result = subprocess.run(
         command,
@@ -22,24 +22,20 @@ def get_tag_list() -> list[str]:
         check=True,
     )
 
-    tags = result.stdout.strip().splitlines()
+    tags = {tag for tag in result.stdout.strip().splitlines()}
 
     return tags
 
-def get_last_tag() -> Version:
-    tags = get_tag_list()
+def parse_highest_verion(tags: set[str]) -> Version|None:
+    valid_version = []
+    for tag in tags:
+        try:
+            clean_tag = tag.removeprefix("v")
+            valid_version.append(Version(clean_tag))
+        except Exception:
+            continue
 
-    versions = [
-        Version(tag.removeprefix('v'))
-        for tag in tags
-    ]
-
-    if not versions:
-        raise RuntimeError("No git tag found.")
-
-    latest = max(versions)
-
-    return latest
+    return max(valid_version) if valid_version else None
 
 def get_config_tag() -> Version:
     config_path = get_git_path() / "pyproject.toml"
@@ -54,18 +50,62 @@ def get_config_tag() -> Version:
 
     return Version(config_tag)
 
-def do_check() -> str:
-    git_tag = get_last_tag()
-    config_tag = get_config_tag()
+def get_remote_tags() -> set[str]:
+    command = ['git', 'ls-remote', '--tags', 'origin']
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        check=True
+    )
 
-    if git_tag == config_tag:
-        return "Version is synchronized"
+    if result.returncode != 0:
+        return set()
+
+    remote_tags = set()
+    for line in result.stdout.strip().splitlines():
+        if not line:
+            continue
+
+        parts = line.split()
+        if len(parts) == 2:
+            ref = parts[1]
+            if ref.endswith("^{}"):
+                continue
+            tag_name = ref.removeprefix("refs/tags/")
+            remote_tags.add(tag_name)
+
+    return remote_tags
+
+def do_check(fetch_true: bool = False) -> str:
+    config_tag = get_config_tag()
+    local_tags = get_local_tags()
+    remote_tags = get_remote_tags()
+
+    output = []
+
+    highest_local_version = parse_highest_verion(local_tags)
+    if highest_local_version is None:
+        return "No local tags found."
+
+    if highest_local_version == config_tag:
+        output.append(f"Version is synchronized with highest local tag (v{config_tag})")
     else:
-        return (
+        output.append(
             f"Version mismatch\n"
-            f"Git:    {git_tag}\n"
-            f"Config: {config_tag}"
+            f"Git Local: {highest_local_version}\n"
+            f"Config:    {config_tag}"
         )
+
+    if fetch_true:
+        missing_in_local = remote_tags - local_tags
+        if missing_in_local:
+            output.append(f"New tag(s) found from remote: ")
+            for tag in sorted(missing_in_local):
+                output.append(f"  - {tag}")
+            output.append("")
+
+    return "\n".join(output)
 
 if __name__ == "__main__":
     print(do_check())
