@@ -40,6 +40,9 @@ def parse_highest_verion(tags: set[str]) -> Version|None:
 def get_config_tag() -> Version:
     config_path = get_git_path() / "pyproject.toml"
 
+    if not config_path.exists():
+        raise RuntimeError(f"Config file not found: {config_path}")
+
     with config_path.open('rb') as f:
         config = tomllib.load(f)
         project_config = config.get('project', {})
