@@ -7,7 +7,7 @@ def do_sync(to_git: bool=False, to_config: bool=False) -> str:
     highest_local_tag = parse_highest_verion(local_tags)
 
     if config_tag == highest_local_tag:
-        return f"Already in sync at v({config_tag})"
+        return f"Already in sync at (v{config_tag})"
 
     if to_git:
         if highest_local_tag:
