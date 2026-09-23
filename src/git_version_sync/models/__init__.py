@@ -1,1 +1,1 @@
-from .bump import BumpRequest
+from .bump import BumpRequest, BumpType

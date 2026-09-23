@@ -1,1 +1,1 @@
-from .config import get_git_path, get_config_path
+from .config import get_config_path

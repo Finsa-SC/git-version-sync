@@ -2,8 +2,8 @@ import subprocess, re
 from packaging.version import Version
 
 from .git import commit_config_change, push_to_remote, create_github_release
-from .check import parse_highest_verion, get_local_tags, get_config_tag
-from ..models import BumpRequest
+from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
+from ..models import BumpRequest, BumpType
 from ..utils import get_config_path
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
@@ -66,38 +66,46 @@ def get_new_minor(version: Version) -> str:
 def get_new_patch(version: Version):
     return f"{version.major}.{version.minor}.{version.micro + 1}"
 
+def calculate_next_version(base_version: Version, bump_type: BumpType) -> str:
+    match bump_type:
+        case "major":
+            return get_new_major(base_version)
+        case "minor":
+            return get_new_minor(base_version)
+        case "patch":
+            return get_new_patch(base_version)
+
 def do_bump(request: BumpRequest):
-    config_tag = get_config_tag()
     local_tags = get_local_tags()
+    remote_tags = get_remote_tags()
+
+    config_tag = get_config_tag()
     highest_local_tag = parse_highest_verion(local_tags)
+    highest_overall_tag = parse_highest_verion(local_tags | remote_tags)
 
     if config_tag != highest_local_tag and not request.force:
         raise RuntimeError(
             f"Version mismatch detected!\n"
             f"  Config: v{config_tag}\n"
             f"  Git   : v{highest_local_tag}\n"
-            f"Please run `git-version-sync sync` first or fix the mismatch."
+            f"Run `git-version-sync sync` first or use `--force` to bypass."
         )
 
-    if highest_local_tag:
-        old_version = max(config_tag, highest_local_tag)
-    else:
-        old_version = config_tag
+    missing_in_local = get_missing_local_tags(remote_tags, local_tags)
+    if missing_in_local and not request.force:
+        missing_str = ", ".join(f"{ver}" for ver in missing_in_local)
+        raise RuntimeError(
+            f"Remote repository has newer tag(s) missing locally: {missing_str}\n"
+            f"Run `git-version-sync sync` first or use `--force` to bump from the highest remote tag."
+        )
 
-    config_path = get_config_path()
+    base_version = max(
+        v
+        for v in [config_tag, highest_local_tag, highest_overall_tag]
+        if v is not None
+    )
 
-    if not config_path.exists():
-        raise RuntimeError(f"Config file not found: {config_path}")
-
-    match request.bump_type:
-        case "major":
-            new_version = get_new_major(old_version)
-        case "minor":
-            new_version = get_new_minor(old_version)
-        case "patch":
-            new_version = get_new_patch(old_version)
-
-    new_version = Version(new_version)
+    new_version = Version(calculate_next_version(base_version, request.bump_type))
 
     bump_version(
         request,
