@@ -1,7 +1,7 @@
 import subprocess, re
 from packaging.version import Version
 
-from .git import commit_config_change, push_to_remote
+from .git import commit_config_change, push_to_remote, create_github_release
 from .check import parse_highest_verion, get_local_tags, get_config_tag
 from ..models import BumpRequest
 from ..utils import get_config_path
@@ -46,6 +46,9 @@ def bump_version(
 
     if request.push:
         push_to_remote(new_version)
+
+    if request.release is not None:
+        create_github_release(new_version, request.release, request.draft)
 
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"

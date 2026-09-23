@@ -35,6 +35,8 @@ def push_to_remote(new_version: Version) -> None:
 
         subprocess.run(
             command,
+            capture_output=True,
+            text=True,
             check=True
         )
     except subprocess.CalledProcessError as e:
@@ -52,4 +54,13 @@ def create_github_release(version: Version, message: str|None=None, draft: bool=
     if draft:
         command.extend(['--draft'])
 
-    subprocess.run(command, check=True)
+    push_to_remote(version)
+    try:
+        subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to create release tag: \n{e.stderr.strip()}") from e

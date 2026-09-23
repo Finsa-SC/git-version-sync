@@ -14,7 +14,8 @@ def main():
                     tag_message=args.message,
                     force=args.force,
                     push=args.push,
-                    release=args.release
+                    release=args.release,
+                    draft=args.draft,
                 )
                 print(do_bump(bump_request))
 

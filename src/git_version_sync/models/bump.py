@@ -10,3 +10,4 @@ class BumpRequest:
     force       : bool
     push        : bool
     release     : str|None
+    draft       : bool

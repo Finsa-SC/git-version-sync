@@ -69,7 +69,7 @@ def create_parser():
         "--release",
         nargs="?",
         const="",
-        default="",
+        default=None,
         metavar="NOTES",
         help="Create a GitHub release for the bumped version (requires 'gh' CLI)"
     )
