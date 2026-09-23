@@ -42,6 +42,15 @@ def push_to_remote(new_version: Version) -> None:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to push to remote: \n{e.stderr.strip()}") from e
 
+def fetch_from_remote():
+    command = ['git', 'fetch', '--tags', 'origin']
+    subprocess.run(
+        command,
+        capture_output=True,
+        text=True,
+        check=True
+    )
+
 def create_github_release(version: Version, message: str|None=None, draft: bool=False):
     tag_name = f"v{version}"
     command = ['gh', 'release', 'create', tag_name, '--generate-notes']
@@ -84,7 +93,6 @@ def get_git_path() -> Path:
             raise RuntimeError(f"Failed to get git path: {err_msg}") from e
 
     return Path(result.stdout.strip())
-
 
 def get_remote_tags() -> set[str]:
     command = ['git', 'ls-remote', '--tags', 'origin']
