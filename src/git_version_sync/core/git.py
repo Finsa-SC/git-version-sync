@@ -40,7 +40,8 @@ def push_to_remote(new_version: Version) -> None:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to push to remote: \n{e.stderr.strip()}") from e
 
-def create_github_release(tag_name: str, message: str|None=None, draft: bool=False):
+def create_github_release(version: Version, message: str|None=None, draft: bool=False):
+    tag_name = f"v{version}"
     command = ['gh', 'release', 'create', tag_name, '--generate-notes']
 
     if not shutil.which('gh'):

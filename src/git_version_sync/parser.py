@@ -64,5 +64,20 @@ def create_parser():
         type=str,
         help="Custom annotation message for the created Git tag"
     )
+    bump_parser.add_argument(
+        "-r",
+        "--release",
+        nargs="?",
+        const="",
+        default="",
+        metavar="NOTES",
+        help="Create a GitHub release for the bumped version (requires 'gh' CLI)"
+    )
+    bump_parser.add_argument(
+        "-d",
+        "--draft",
+        action="store_true",
+        help="Save the GitHub release as a draft (requires --release)",
+    )
 
     return parser

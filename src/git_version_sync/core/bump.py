@@ -1,9 +1,9 @@
 import subprocess, re
 from packaging.version import Version
-from typing import Literal
 
 from .git import commit_config_change, push_to_remote
 from .check import parse_highest_verion, get_local_tags, get_config_tag
+from ..models import BumpRequest
 from ..utils import get_config_path
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
@@ -36,12 +36,15 @@ def bump_config_version(new_version: Version) -> None:
 
     config_path.write_text(new_content, encoding="utf-8")
 
-def bump_version(new_version: Version, message: str|None=None, push: bool=False) -> None:
+def bump_version(
+        request: BumpRequest,
+        new_version: Version,
+) -> None:
     bump_config_version(new_version)
     commit_config_change(new_version)
-    bump_git_tag(new_version, message)
+    bump_git_tag(new_version, request.tag_message)
 
-    if push:
+    if request.push:
         push_to_remote(new_version)
 
 def get_new_major(version: Version) -> str:
@@ -53,19 +56,12 @@ def get_new_minor(version: Version) -> str:
 def get_new_patch(version: Version):
     return f"{version.major}.{version.minor}.{version.micro + 1}"
 
-BumpType = Literal["major", "minor", "patch"]
-
-def do_bump(
-        bump_type: BumpType,
-        message: str|None = None,
-        force: bool = False,
-        push: bool = False
-):
+def do_bump(request: BumpRequest):
     config_tag = get_config_tag()
     local_tags = get_local_tags()
     highest_local_tag = parse_highest_verion(local_tags)
 
-    if config_tag != highest_local_tag and not force:
+    if config_tag != highest_local_tag and not request.force:
         raise RuntimeError(
             f"Version mismatch detected!\n"
             f"  Config: v{config_tag}\n"
@@ -83,7 +79,7 @@ def do_bump(
     if not config_path.exists():
         raise RuntimeError(f"Config file not found: {config_path}")
 
-    match bump_type:
+    match request.bump_type:
         case "major":
             new_version = get_new_major(old_version)
         case "minor":
@@ -93,6 +89,9 @@ def do_bump(
 
     new_version = Version(new_version)
 
-    bump_version(new_version, message, push)
+    bump_version(
+        request,
+        new_version
+    )
 
     return f"Success bump version to v{new_version}"

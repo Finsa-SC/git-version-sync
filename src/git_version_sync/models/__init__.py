@@ -1,0 +1,1 @@
+from .bump import BumpRequest
