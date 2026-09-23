@@ -66,7 +66,12 @@ def get_remote_tags() -> set[str]:
 
     return remote_tags
 
-def do_check(fetch_true: bool = False) -> str:
+def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
+    missing_in_local = remote_tags - local_tags
+
+    return missing_in_local
+
+def do_check() -> str:
     config_tag = get_config_tag()
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
@@ -86,13 +91,12 @@ def do_check(fetch_true: bool = False) -> str:
             f"Config:    {config_tag}"
         )
 
-    if fetch_true:
-        missing_in_local = remote_tags - local_tags
-        if missing_in_local:
-            output.append(f"New tag(s) found from remote: ")
-            for tag in sorted(missing_in_local):
-                output.append(f"  - {tag}")
-            output.append("")
+    missing_in_local = get_missing_local_tags(remote_tags, local_tags)
+    if missing_in_local:
+        output.append(f"New tag(s) found from remote: ")
+        for tag in sorted(missing_in_local):
+            output.append(f"  - {tag}")
+        output.append("")
 
     return "\n".join(output)
 

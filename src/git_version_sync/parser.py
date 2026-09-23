@@ -21,11 +21,6 @@ def create_parser():
         "check",
         help="Check and compare current version status between Git tags and pyproject.toml"
     )
-    check_parser.add_argument(
-        "--fetch",
-        action="store_true",
-        help="Fetch remote tags before checking"
-    )
 
     # Subcommand: sync
     sync_parser = subparsers.add_parser(

@@ -23,7 +23,7 @@ def main():
                 print(do_sync(args.to_git, args.to_config))
 
             case 'check':
-                print(do_check(args.fetch))
+                print(do_check())
 
             case _:
                 print(f"Invalid command {args.command}")
