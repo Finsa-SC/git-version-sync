@@ -1,13 +1,24 @@
 from .bump import bump_config_version, bump_git_tag
 from .check import get_config_tag, get_local_tags, parse_highest_verion
+from .git import fetch_remote_tags, get_remote_tags, is_branch_behind_remote
+
 
 def do_sync(to_git: bool=False, to_config: bool=False) -> str:
+    fetch_remote_tags()
+
     config_tag = get_config_tag()
     local_tags = get_local_tags()
+
     highest_local_tag = parse_highest_verion(local_tags)
 
     if config_tag == highest_local_tag:
         return f"Already in sync at (v{config_tag})"
+
+    if is_branch_behind_remote():
+        raise RuntimeError(
+            "Your branch is behind remote commits. "
+            "Please run `git pull` first before syncing version"
+        )
 
     if to_git:
         if highest_local_tag:

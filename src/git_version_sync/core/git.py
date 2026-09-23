@@ -42,14 +42,18 @@ def push_to_remote(new_version: Version) -> None:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to push to remote: \n{e.stderr.strip()}") from e
 
-def fetch_from_remote():
+def fetch_remote_tags():
     command = ['git', 'fetch', '--tags', 'origin']
-    subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        check=True
-    )
+
+    try:
+        subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to fetch tags from remote: {e.stderr.strip()}") from e
 
 def create_github_release(version: Version, message: str|None=None, draft: bool=False):
     tag_name = f"v{version}"
@@ -120,3 +124,19 @@ def get_remote_tags() -> set[str]:
             remote_tags.add(tag_name)
 
     return remote_tags
+
+def is_branch_behind_remote() -> bool:
+    command = ['git', 'rev-list', '--count', 'HEAD..@{u}']
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        return int(result.stdout.strip() or 0) > 0
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
