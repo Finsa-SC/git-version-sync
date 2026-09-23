@@ -93,7 +93,7 @@ def do_bump(request: BumpRequest):
 
     missing_in_local = get_missing_local_tags(remote_tags, local_tags)
     if missing_in_local and not request.force:
-        missing_str = ", ".join(f"v{ver}" for ver in missing_in_local)
+        missing_str = ", ".join(f"{ver}" for ver in missing_in_local)
         raise RuntimeError(
             f"Remote repository has newer tag(s) missing locally: {missing_str}\n"
             f"Run `git-version-sync sync` first or use `--force` to bump from the highest remote tag."

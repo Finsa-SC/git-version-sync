@@ -59,11 +59,14 @@ def do_check() -> str:
     if highest_local_version is None:
         return "No local tags found."
 
+    # Check if local version match but missing from remote
     if highest_local_version == config_tag and missing_in_local:
-        status = "behind" if highest_remote > highest_local_version else "ahead"
+        status = "behind" if highest_remote > highest_local_version else "ahead of"
         output.append(f"Config matches local tag (v{config_tag}), but local is {status} remote!")
+
     elif highest_local_version == config_tag:
         output.append(f"Version is synchronized with highest local tag (v{config_tag})")
+
     else:
         output.append(
             f"Version mismatch\n"
