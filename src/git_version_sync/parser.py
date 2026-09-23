@@ -1,4 +1,5 @@
 import argparse
+from importlib.metadata import version
 
 def create_parser():
     parser = argparse.ArgumentParser(
@@ -7,6 +8,13 @@ def create_parser():
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    parser.add_argument(
+        "-v",
+        "--version",
+        action="version",
+        version=f"%(prog)s {version('git-version-sync')}"
+    )
 
     # Subcommand: check
     check_parser = subparsers.add_parser(
