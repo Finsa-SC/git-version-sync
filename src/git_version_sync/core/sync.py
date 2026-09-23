@@ -1,7 +1,6 @@
 from .bump import bump_config_version, bump_git_tag
 from .check import get_config_tag, get_local_tags, parse_highest_verion
-from .git import fetch_remote_tags, get_remote_tags, is_branch_behind_remote
-
+from .git import fetch_remote_tags, is_branch_behind_remote
 
 def do_sync(to_git: bool=False, to_config: bool=False) -> str:
     fetch_remote_tags()
