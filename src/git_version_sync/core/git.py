@@ -1,5 +1,5 @@
 import subprocess, shutil
-
+from pathlib import Path
 from packaging.version import Version
 from git_version_sync.utils import get_config_path
 
@@ -64,3 +64,23 @@ def create_github_release(version: Version, message: str|None=None, draft: bool=
         )
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to create release tag: \n{e.stderr.strip()}") from e
+
+def get_git_path() -> Path:
+    command = ["git", "rev-parse", "--show-toplevel"]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        err_msg = (e.stderr or "").strip()
+
+        if "not a git" in err_msg:
+            raise RuntimeError(f"Not a Git repository (or any of the parent directories).") from e
+        else:
+            raise RuntimeError(f"Failed to get git path: {err_msg}") from e
+
+    return Path(result.stdout.strip())

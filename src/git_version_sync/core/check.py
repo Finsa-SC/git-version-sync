@@ -1,7 +1,6 @@
 import subprocess, tomllib
 from packaging.version import Version
-from git_version_sync.utils import get_git_path, get_config_path
-
+from git_version_sync.utils import get_config_path
 
 def get_local_tags() -> set[str]:
     command = ["git", "tag", "--list"]
