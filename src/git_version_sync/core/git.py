@@ -1,4 +1,5 @@
-import subprocess
+import subprocess, shutil
+
 from packaging.version import Version
 from git_version_sync.utils import get_config_path
 
@@ -34,9 +35,20 @@ def push_to_remote(new_version: Version) -> None:
 
         subprocess.run(
             command,
-            capture_output=True,
-            text=True,
             check=True
         )
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to push to remote: \n{e.stderr.strip()}") from e
+
+def create_github_release(tag_name: str, message: str|None=None, draft: bool=False):
+    command = ['gh', 'release', 'create', tag_name, '--generate-notes']
+
+    if not shutil.which('gh'):
+        raise RuntimeError("Github CLI ('gh') not installed yet, please install 'gh' first.")
+
+    if message and message.strip():
+        command.extend(['--notes', message])
+    if draft:
+        command.extend(['--draft'])
+
+    subprocess.run(command, check=True)
