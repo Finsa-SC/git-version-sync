@@ -28,7 +28,6 @@ def main():
             case _:
                 print(f"Invalid command {args.command}")
 
-        print("\n")
     except Exception as e:
         print(f"{e}")
 
