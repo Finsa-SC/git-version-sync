@@ -97,6 +97,20 @@ def delete_tag(version: Version) -> None:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
 
+def delete_remote_tag(version: Version) -> None:
+    command = ['git', 'push', 'origin', '--delete', f"v{version}"]
+
+    try:
+        subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
+
 def get_git_path() -> Path:
     command = ["git", "rev-parse", "--show-toplevel"]
 
