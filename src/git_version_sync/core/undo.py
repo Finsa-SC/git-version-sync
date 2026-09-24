@@ -3,7 +3,6 @@ from packaging.version import Version
 from git_version_sync.core.bump import bump_config_version
 from git_version_sync.core.check import get_local_tags, parse_highest_verion
 from git_version_sync.core.git import (
-    fetch_remote_tags,
     delete_tag,
     delete_remote_tag,
     get_tag_commit,
@@ -31,14 +30,18 @@ def do_undo(tag: str|None=None, remote:bool=False, force:bool=False) -> None:
     target_tag = Version(tag.lstrip('v')) if tag else latest_tag
     is_latest = (target_tag == latest_tag)
 
+    # User confirmation
+    if not force:
+        target_str = f"v{target_tag}"
+        remote_info = " and REMOTE" if remote else ""
+        confirm = input(f"Are you sure you want to undo tag {target_str} (LOCAL{remote_info})? [y/N]: ").strip().lower()
+        if confirm not in ["y", "yes", "yeah", "ye", "yee"]:
+            print("Undo operation canceled.")
+            return
+
     if is_latest:
         tag_commit = get_tag_commit(f"v{target_tag}")
         head_commit = get_head_commit()
-
-        confirm = input("Are you sure you want to undo tag {target_str} (LOCAL{remote_info})? [y/N]: ").strip().lower()
-        if confirm not in ["y", "yes", 'yeah', 'ye', 'yee']:
-            print("Undo operation canceled.")
-            return
 
         if tag_commit and tag_commit == head_commit:
             reset_soft_head()
