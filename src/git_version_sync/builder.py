@@ -1,7 +1,7 @@
 import argparse
 from importlib.metadata import version, PackageNotFoundError
 
-from git_version_sync.parser import check_subparse, sync_subparse, bump_subparse, push_subparse
+from git_version_sync.parser import check_subparse, sync_subparse, bump_subparse, push_subparse, undo_subparse
 
 
 def create_parser():
@@ -28,5 +28,6 @@ def create_parser():
     sync_subparse(subparsers)
     bump_subparse(subparsers)
     push_subparse(subparsers)
+    undo_subparse(subparsers)
 
     return parser

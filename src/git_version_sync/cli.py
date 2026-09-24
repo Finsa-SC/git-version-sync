@@ -1,6 +1,7 @@
 from git_version_sync.models import BumpRequest
 from .builder import create_parser
-from .core import do_check, do_bump, do_sync, do_push
+from .core import do_check, do_bump, do_sync, do_push, do_undo
+
 
 def main():
     parser = create_parser()
@@ -27,6 +28,13 @@ def main():
 
             case 'push':
                 do_push(args.tags, args.all)
+
+            case 'undo':
+                do_undo(
+                    args.target,
+                    remote=args.remote,
+                    force=args.force,
+                )
 
             case _:
                 print(f"Invalid command {args.command}")
