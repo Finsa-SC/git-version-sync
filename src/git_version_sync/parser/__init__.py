@@ -2,3 +2,4 @@ from .check import check_subparse
 from .bump import bump_subparse
 from .sync import sync_subparse
 from .push import push_subparse
+from .undo import undo_subparse
