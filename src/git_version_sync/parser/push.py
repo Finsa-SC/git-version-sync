@@ -13,6 +13,5 @@ def push_subparse(subparsers):
         "-a",
         "--all",
         action="store_true",
-        dest="push_all",
         help="Push all local tags to remote"
     )
