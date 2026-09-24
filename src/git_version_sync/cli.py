@@ -1,6 +1,6 @@
 from git_version_sync.models import BumpRequest
-from .parser import create_parser
-from .core import do_check, do_bump, do_sync
+from .builder import create_parser
+from .core import do_check, do_bump, do_sync, do_push
 
 def main():
     parser = create_parser()
@@ -24,6 +24,9 @@ def main():
 
             case 'check':
                 print(do_check())
+
+            case 'push':
+                do_push(args.tags, args.all)
 
             case _:
                 print(f"Invalid command {args.command}")

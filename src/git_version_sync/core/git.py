@@ -25,13 +25,18 @@ def commit_config_change(new_version: Version) -> None:
             return
         raise RuntimeError(f"Git commit failed: \n{e.stderr.strip()}") from e
 
-def push_to_remote(new_version: Version) -> None:
+def push_to_remote(new_version: list[Version]|Version) -> None:
     try:
         command = [
             'git', 'push',
             'origin', 'HEAD',
-            f'v{new_version}'
         ]
+
+        if isinstance(new_version, Version):
+            command.append(f"v{new_version}")
+        else:
+            str_version = [f"v{version}" for version in new_version]
+            command.extend(str_version)
 
         subprocess.run(
             command,
