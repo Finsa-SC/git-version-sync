@@ -111,6 +111,40 @@ def delete_remote_tag(version: Version) -> None:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
 
+def get_tag_commit(tag_name: str) -> str | None:
+    command = ["git", "rev-parse", f"{tag_name}^{{commit}}"]
+
+    try:
+        res = subprocess.run(
+            command,
+            capture_output=True, text=True, check=True
+        )
+        return res.stdout.strip()
+    except subprocess.CalledProcessError:
+        return None
+
+def get_head_commit() -> str | None:
+    command = ["git", "rev-parse", "HEAD"]
+
+    try:
+        res = subprocess.run(
+            command,
+            capture_output=True, text=True, check=True
+        )
+        return res.stdout.strip()
+    except subprocess.CalledProcessError:
+        return None
+
+def reset_soft_head() -> None:
+    command = ["git", "reset", "--soft", "HEAD~1"]
+
+    try:
+        subprocess.run(
+            command, check=True
+        )
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to soft reset head: {e.stderr.strip()}") from e
+
 def get_git_path() -> Path:
     command = ["git", "rev-parse", "--show-toplevel"]
 
