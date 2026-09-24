@@ -1,5 +1,5 @@
 from git_version_sync.models import BumpRequest
-from .parser import create_parser
+from .builder import create_parser
 from .core import do_check, do_bump, do_sync
 
 def main():
