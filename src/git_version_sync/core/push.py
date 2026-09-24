@@ -4,7 +4,7 @@ from .check import get_local_tags, get_remote_tags, parse_highest_verion
 from .git import push_to_remote, fetch_remote_tags
 
 
-def do_push(tags: list[str]|None, push_all: bool=False):
+def do_push(tags: list[str], push_all: bool=False):
     fetch_remote_tags()
 
     local_tags = get_local_tags()
@@ -21,7 +21,7 @@ def do_push(tags: list[str]|None, push_all: bool=False):
             print("Everything up-to-date.")
             return
 
-    elif tags is not None:
+    elif tags:
         tags_to_push.extend(tags)
 
     else:
