@@ -1,12 +1,16 @@
-name: Publish to PyPI
+name: Publish Package
 
 on:
   push:
     tags:
-      - "v*"
+      - 'v*'
 
 jobs:
+  run-tests:
+    uses: ./.github/workflows/ci.yaml
+
   build:
+    needs: run-tests
     runs-on: ubuntu-latest
 
     steps:
