@@ -23,7 +23,7 @@ def do_push(tags: list[str], push_all: bool=False):
     elif tags:
         tags_to_push.extend(Version(ver) for ver in tags if ver in unpush_tags)
 
-    elif latest_tags in unpush_tags:
+    elif f"v{latest_tags}" in unpush_tags:
         tags_to_push.append(latest_tags)
 
     # Check missing tags
