@@ -41,22 +41,23 @@ def bump_version(
         request: BumpRequest,
         new_version: Version,
 ) -> None:
-    print("Updating pyproject.toml version...")
     bump_config_version(new_version)
+    print(f"Updated pyproject.toml to v{new_version}")
 
-    print("Committing new change...")
     commit_config_change(new_version)
+    print(f"Committed changes: 'bump version to v{new_version}'")
 
-    print(f"Creating git tag v{new_version}...")
     bump_git_tag(new_version, request.tag_message)
+    print(f"Created Git tag v{new_version}")
 
     if request.push:
-        print("Pushing commit and tag to remote...")
         push_to_remote(new_version)
+        print("Pushed commit and tag to remote")
 
     if request.release is not None:
-        print(f"Creating GitHub Release for v{new_version}...")
         create_github_release(new_version, request.release, request.draft)
+        draft_str = " (Draft)" if request.draft else ""
+        print(f"Created GitHub Release v{new_version}{draft_str}")
 
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"
