@@ -2,6 +2,7 @@ import subprocess, tomllib
 from packaging.version import Version
 
 from git_version_sync.core.git import get_remote_tags
+from git_version_sync.networks import check_network
 from git_version_sync.utils import get_config_path
 
 def get_local_tags() -> set[str]:
@@ -47,6 +48,8 @@ def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[s
     return missing_in_local
 
 def do_check() -> str:
+    check_network()
+
     config_tag = get_config_tag()
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()

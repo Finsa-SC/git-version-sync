@@ -4,6 +4,7 @@ from packaging.version import Version
 from .git import commit_config_change, push_to_remote, create_github_release
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..models import BumpRequest, BumpType
+from ..networks import check_network
 from ..utils import get_config_path
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
@@ -76,6 +77,9 @@ def calculate_next_version(base_version: Version, bump_type: BumpType) -> str:
             return get_new_patch(base_version)
 
 def do_bump(request: BumpRequest):
+    if request.push:
+        check_network()
+
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
 

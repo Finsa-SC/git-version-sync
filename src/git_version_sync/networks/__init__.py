@@ -1,1 +1,1 @@
-from .networks import check_network
+from .check import check_network

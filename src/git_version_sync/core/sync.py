@@ -1,8 +1,11 @@
 from .bump import bump_config_version, bump_git_tag
 from .check import get_config_tag, get_local_tags, parse_highest_verion
 from .git import fetch_remote_tags, is_branch_behind_remote
+from ..networks import check_network
+
 
 def do_sync(to_git: bool=False, to_config: bool=False) -> str:
+    check_network()
     fetch_remote_tags()
 
     config_tag = get_config_tag()
