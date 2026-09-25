@@ -5,5 +5,5 @@ def check_network() -> None:
         with socket.create_connection(("8.8.8.8", 53), timeout=5):
             ...
 
-    except OSError as e:
-        raise OSError(f"Network error: {e}")
+    except OSError:
+        raise OSError(f"Network error: Network is unreachable. Unable to fetch remote tags.")
