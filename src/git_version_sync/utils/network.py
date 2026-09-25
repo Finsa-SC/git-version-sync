@@ -1,6 +1,6 @@
 import socket
 
-def validate_network() -> None:
+def check_network() -> None:
     try:
         with socket.create_connection(("8.8.8.8", 53), timeout=5):
             ...
