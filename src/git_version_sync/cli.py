@@ -18,13 +18,20 @@ def main():
                     release=args.release,
                     draft=args.draft,
                 )
-                print(do_bump(bump_request))
+                print(do_bump(
+                    bump_request
+                ))
 
             case 'sync':
-                print(do_sync(args.to_git, args.to_config))
+                print(do_sync(
+                    args.to_git,
+                    args.to_config
+                ))
 
             case 'check':
-                print(do_check())
+                print(do_check(
+                    args.no_fetch
+                ))
 
             case 'push':
                 do_push(args.tags, args.all)
