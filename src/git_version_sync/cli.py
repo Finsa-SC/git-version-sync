@@ -17,6 +17,7 @@ def main():
                     push=args.push,
                     release=args.release,
                     draft=args.draft,
+                    dry_run=args.dry_run,
                 )
                 print(do_bump(
                     bump_request

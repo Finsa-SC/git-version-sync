@@ -41,3 +41,9 @@ def bump_subparse(subparsers):
         action="store_true",
         help="Save the GitHub release as a draft (requires --release)",
     )
+    bump_parser.add_argument(
+        "-n",
+        "--dry-run",
+        action="store_true",
+        help="Perform a dry run without making any actual changes"
+    )

@@ -59,6 +59,23 @@ def bump_version(
         draft_str = " (Draft)" if request.draft else ""
         print(f"Created GitHub Release v{new_version}{draft_str}")
 
+def format_dry_run_output(request: BumpRequest, new_version: Version) -> str:
+    output: list[str] = [
+        f"Would update pyproject.toml to v{new_version} (DRY RUN)",
+        f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
+        f"Would create Git tag v{new_version} (DRY RUN)",
+    ]
+
+    if request.push:
+        output.append(f"Would push commit and tag to remote (DRY RUN)")
+
+    if request.release:
+        output.append(f"Would create GitHub Release v{new_version} (DRY RUN)")
+
+    output.append(f"\nDry run complete for v{new_version} (no changes made)")
+
+    return "\n".join(output)
+
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"
 
@@ -111,6 +128,10 @@ def do_bump(request: BumpRequest):
     )
 
     new_version = Version(calculate_next_version(base_version, request.bump_type))
+
+    # Dry run
+    if request.dry_run:
+        return format_dry_run_output(request, new_version)
 
     bump_version(
         request,
