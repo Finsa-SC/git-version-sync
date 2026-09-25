@@ -4,6 +4,7 @@ from packaging.version import Version
 from .git import commit_config_change, push_to_remote, create_github_release
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..models import BumpRequest, BumpType
+from ..networks import check_network
 from ..utils import get_config_path
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
@@ -40,22 +41,40 @@ def bump_version(
         request: BumpRequest,
         new_version: Version,
 ) -> None:
-    print("Updating pyproject.toml version...")
     bump_config_version(new_version)
+    print(f"Updated pyproject.toml to v{new_version}")
 
-    print("Committing new change...")
     commit_config_change(new_version)
+    print(f"Committed changes: 'bump version to v{new_version}'")
 
-    print(f"Creating git tag v{new_version}...")
     bump_git_tag(new_version, request.tag_message)
+    print(f"Created Git tag v{new_version}")
 
     if request.push:
-        print("Pushing commit and tag to remote...")
         push_to_remote(new_version)
+        print("Pushed commit and tag to remote")
 
     if request.release is not None:
-        print(f"Creating GitHub Release for v{new_version}...")
         create_github_release(new_version, request.release, request.draft)
+        draft_str = " (Draft)" if request.draft else ""
+        print(f"Created GitHub Release v{new_version}{draft_str}")
+
+def format_dry_run_output(request: BumpRequest, new_version: Version) -> str:
+    output: list[str] = [
+        f"Would update pyproject.toml to v{new_version} (DRY RUN)",
+        f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
+        f"Would create Git tag v{new_version} (DRY RUN)",
+    ]
+
+    if request.push:
+        output.append(f"Would push commit and tag to remote (DRY RUN)")
+
+    if request.release:
+        output.append(f"Would create GitHub Release v{new_version} (DRY RUN)")
+
+    output.append(f"\nDry run complete for v{new_version} (no changes made)")
+
+    return "\n".join(output)
 
 def get_new_major(version: Version) -> str:
     return f"{version.major + 1}.0.0"
@@ -76,6 +95,9 @@ def calculate_next_version(base_version: Version, bump_type: BumpType) -> str:
             return get_new_patch(base_version)
 
 def do_bump(request: BumpRequest):
+    if request.push:
+        check_network()
+
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
 
@@ -106,6 +128,10 @@ def do_bump(request: BumpRequest):
     )
 
     new_version = Version(calculate_next_version(base_version, request.bump_type))
+
+    # Dry run
+    if request.dry_run:
+        return format_dry_run_output(request, new_version)
 
     bump_version(
         request,

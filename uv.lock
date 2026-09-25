@@ -4,7 +4,7 @@ requires-python = ">=3.11"
 
 [[package]]
 name = "git-version-sync"
-version = "0.1.0"
+version = "1.7.0"
 source = { editable = "." }
 dependencies = [
     { name = "packaging" },

@@ -3,3 +3,8 @@ def check_subparse(subparsers):
         "check",
         help="Check and compare current version status between Git tags and pyproject.toml"
     )
+    check_parser.add_argument(
+        "--no-fetch",
+        action="store_true",
+        help="Skip fetching tags from remote repository"
+    )

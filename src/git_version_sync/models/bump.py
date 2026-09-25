@@ -7,7 +7,8 @@ BumpType = Literal["major", "minor", "patch"]
 class BumpRequest:
     bump_type   : BumpType
     tag_message : str|None
-    force       : bool
-    push        : bool
     release     : str|None
-    draft       : bool
+    force       : bool = False
+    push        : bool = False
+    draft       : bool = False
+    dry_run     : bool = False

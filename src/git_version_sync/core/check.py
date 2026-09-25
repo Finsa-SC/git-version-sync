@@ -2,6 +2,7 @@ import subprocess, tomllib
 from packaging.version import Version
 
 from git_version_sync.core.git import get_remote_tags
+from git_version_sync.networks import check_network
 from git_version_sync.utils import get_config_path
 
 def get_local_tags() -> set[str]:
@@ -46,39 +47,56 @@ def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[s
 
     return missing_in_local
 
-def do_check() -> str:
+def do_check(no_fetch: bool=False) -> str:
+
     config_tag = get_config_tag()
     local_tags = get_local_tags()
-    remote_tags = get_remote_tags()
 
-    missing_in_local = get_missing_local_tags(remote_tags, local_tags)
-    output = []
-
-    highest_remote = parse_highest_verion(remote_tags)
     highest_local_version = parse_highest_verion(local_tags)
     if highest_local_version is None:
         return "No local tags found."
 
-    # Check if local version match but missing from remote
-    if highest_local_version == config_tag and missing_in_local:
-        status = "behind" if highest_remote > highest_local_version else "ahead of"
-        output.append(f"Config matches local tag (v{config_tag}), but local is {status} remote!")
-
-    elif highest_local_version == config_tag:
-        output.append(f"Version is synchronized with highest local tag (v{config_tag})")
+    if no_fetch:
+        if config_tag == highest_local_version:
+            return f"Version is synchronized with highest local tag (v{config_tag})"
+        else:
+            return (
+                f"Version mismatch\n"
+                f"Git Local: {highest_local_version or 'unknown'}\n"
+                f"Config:    {config_tag}\n"
+            )
 
     else:
-        output.append(
-            f"Version mismatch\n"
-            f"Git Local: {highest_local_version}\n"
-            f"Config:    {config_tag}"
-        )
+        check_network()
 
-    if missing_in_local:
-        output.append(f"New tag(s) found from remote: ")
-        for tag in sorted(missing_in_local):
-            output.append(f"  - {tag}")
-        output.append("")
+        remote_tags = get_remote_tags()
+
+        missing_in_local = get_missing_local_tags(remote_tags, local_tags)
+        output = []
+
+        highest_remote = parse_highest_verion(remote_tags)
+
+        # Check if local version match but missing from remote
+        if highest_local_version == config_tag and missing_in_local:
+            status = "behind" if highest_remote > highest_local_version else "ahead of"
+            output.append(f"Config matches local tag (v{config_tag}), but local is {status} remote!")
+
+        elif highest_local_version == config_tag:
+            output.append(f"Version is synchronized with highest local tag (v{config_tag})")
+
+        else:
+            output.append(
+                f"Version mismatch\n"
+                f"Git Local: {highest_local_version or 'unknown'}\n"
+                f"Config:    {config_tag}\n"
+                f"Remote:    {highest_remote or 'unknown'}"
+            )
+
+        if missing_in_local:
+            output.append(f"New tag(s) found from remote: ")
+            for tag in sorted(missing_in_local):
+                output.append(f"  - {tag}")
+            output.append("")
 
     return "\n".join(output)
 
