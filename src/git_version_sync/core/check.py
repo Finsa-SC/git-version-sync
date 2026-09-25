@@ -1,7 +1,7 @@
 import subprocess, tomllib
 from packaging.version import Version
 
-from git_version_sync.core.git import get_remote_tags
+from git_version_sync.core.git import get_remote_tags, fetch_remote_tags
 from git_version_sync.networks import check_network
 from git_version_sync.utils import get_config_path
 
@@ -48,7 +48,6 @@ def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[s
     return missing_in_local
 
 def do_check(no_fetch: bool=False) -> str:
-
     config_tag = get_config_tag()
     local_tags = get_local_tags()
 
@@ -68,6 +67,7 @@ def do_check(no_fetch: bool=False) -> str:
 
     else:
         check_network()
+        fetch_remote_tags()
 
         remote_tags = get_remote_tags()
 
@@ -77,7 +77,7 @@ def do_check(no_fetch: bool=False) -> str:
         highest_remote = parse_highest_verion(remote_tags)
 
         # Check if local version match but missing from remote
-        if highest_local_version == config_tag and missing_in_local:
+        if highest_local_version == config_tag:
             status = "behind" if highest_remote > highest_local_version else "ahead of"
             output.append(f"Config matches local tag (v{config_tag}), but local is {status} remote!")
 
