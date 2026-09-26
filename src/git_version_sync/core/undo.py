@@ -34,11 +34,13 @@ def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name
     target_tag = Version(tag.lstrip('v')) if tag else latest_tag
     is_latest = (target_tag == latest_tag)
 
+    previous_version = get_previous_version(local_tags)
+
     # User confirmation
     if not force:
         target_str = f"v{target_tag}"
         remote_info = " and REMOTE" if remote else ""
-        confirm = input(f"Are you sure you want to undo tag {target_str} (LOCAL{remote_info})? [y/N]: ").strip().lower()
+        confirm = input(f"Are you sure you want to undo tag {target_str} (LOCAL{remote_info}) and revert to v{previous_version}? [y/N]: ").strip().lower()
         if confirm not in ["y", "yes", "yeah", "ye", "yee"]:
             print("Undo operation canceled.")
             return
@@ -51,7 +53,6 @@ def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name
             reset_soft_head()
             print("Reset last git commit.")
 
-        previous_version = get_previous_version(local_tags)
 
         if previous_version:
             bump_config_version(previous_version, config_name)

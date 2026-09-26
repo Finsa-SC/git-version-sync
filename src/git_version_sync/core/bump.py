@@ -30,7 +30,6 @@ def bump_config_version(new_version: Version, config_name: Path|None=None) -> No
     config_path = get_config_path(config_name)
 
     config_parser = get_config_parser(config_path)
-    print(f"Update {config_path.name} to {new_version}")
     config_parser.update_version(new_version)
 
 def bump_version(
