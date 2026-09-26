@@ -2,11 +2,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
-BumpType = Literal["major", "minor", "patch"]
+BumpType = Literal["major", "minor", "patch", "auto"]
 
 @dataclass(frozen=True)
 class BumpRequest:
-    bump_type   : BumpType
+    bump_type   : BumpType|None = None
     config_path : Path|None = None
     tag_message : str|None = None
     release     : str|None = None

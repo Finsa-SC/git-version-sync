@@ -3,7 +3,7 @@ from pathlib import Path
 
 from packaging.version import Version
 
-from .git import commit_config_change, push_to_remote, create_github_release
+from .git import commit_config_change, push_to_remote, create_github_release, detect_bump_type
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..config_handlers import get_config_parser
 from ..models import BumpRequest, BumpType
@@ -30,7 +30,6 @@ def bump_config_version(new_version: Version, config_name: Path|None=None) -> No
     config_path = get_config_path(config_name)
 
     config_parser = get_config_parser(config_path)
-    print(f"Update {config_path.name} to {new_version}")
     config_parser.update_version(new_version)
 
 def bump_version(
@@ -126,7 +125,29 @@ def do_bump(request: BumpRequest):
         if v is not None
     )
 
-    new_version = Version(calculate_next_version(base_version, request.bump_type))
+    # if run without bump command, will be interactive
+    if request.bump_type is None:
+        bump_type, reason = detect_bump_type(base_version)
+        next_version = calculate_next_version(base_version, bump_type)
+
+        print(reason)
+        print(f"Suggested bump: {bump_type} (v{base_version} -> v{next_version})")
+
+        confirm = input("Apply this version bump? [Y/n]: ").lower()
+        print("")
+
+        if confirm not in ["y", 'yes']:
+            return "Bump version has been canceled."
+
+    # Immediately detect version without interactive confirmation
+    elif request.bump_type == "auto":
+        bump_type, _ = detect_bump_type(base_version)
+
+    # Manual type bump
+    else:
+        bump_type = request.bump_type
+
+    new_version = Version(calculate_next_version(base_version, bump_type))
 
     # Dry run
     if request.dry_run:
