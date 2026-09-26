@@ -210,10 +210,10 @@ def is_branch_behind_remote() -> bool:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
 
-def detect_bump_type(latest_tag: Version) -> BumpType:
+def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
     command = [
         "git", "log",
-        f"v{latest_tag}..HEAD",
+        f"v{base_version}..HEAD",
         "--format=%B%n---END_COMMIT---"
     ]
 
@@ -238,8 +238,9 @@ def detect_bump_type(latest_tag: Version) -> BumpType:
     pat_minor = r"^feat(\([\w\.-]+\))?:"
     pat_patch = r"^fix(\([\w\.-]+\))?:"
 
-    has_minor = False
-    has_patch = False
+    major_count = 0
+    minor_count = 0
+    patch_count = 0
 
     for commit in commits:
         commit_str = commit.strip()
@@ -247,17 +248,27 @@ def detect_bump_type(latest_tag: Version) -> BumpType:
             continue
 
         if re.search(pat_major, commit_str, re.MULTILINE):
-            return "major"
+            major_count += 1
 
         elif re.search(pat_minor, commit_str, re.MULTILINE):
-            has_minor = True
+            minor_count += 1
 
         elif re.search(pat_patch, commit_str, re.MULTILINE):
-            has_patch = True
+            patch_count += 1
 
-    if has_minor:
-        return "minor"
-    elif has_patch:
-        return "patch"
-    else:
-        raise RuntimeError("No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). Please specify bump type manually.")
+    if major_count > 0:
+        reason = f"Detected {major_count} BREAKING CHANGE commit(s) since v{base_version}"
+        return "major", reason
+
+    if minor_count > 0:
+        reason = f"Detected {minor_count} 'feat' commit(s) since v{base_version}"
+        return "minor", reason
+
+    if patch_count > 0:
+        reason = f"Detected {patch_count} 'fix' commit(s) since v{base_version}"
+        return "patch", reason
+
+    raise RuntimeError(
+        "No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). "
+        "Please specify bump type manually."
+    )
