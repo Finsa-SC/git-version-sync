@@ -5,8 +5,10 @@ def bump_subparse(subparsers):
     )
     bump_parser.add_argument(
         "part",
-        choices=["major", "minor", "patch"],
-        help="Version part to increment (major, minor, or patch)"
+        nargs="?",
+        choices=["major", "minor", "patch", "auto"],
+        default=None,
+        help="Version part to increment (major, minor, patch, or auto)"
     )
     bump_parser.add_argument(
         "-f",

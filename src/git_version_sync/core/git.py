@@ -1,6 +1,8 @@
+import re
 import subprocess, shutil
 from pathlib import Path
 from packaging.version import Version
+from git_version_sync.models import BumpType
 from git_version_sync.utils import get_config_path
 
 def commit_config_change(new_version: Version) -> None:
@@ -207,3 +209,55 @@ def is_branch_behind_remote() -> bool:
 
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
+
+def detect_bump_type(latest_tag: Version) -> BumpType:
+    command = [
+        "git", "log",
+        f"v{latest_tag}..HEAD",
+        "--format=%B%n---END_COMMIT---"
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        raw_logs = result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Failed to detect bump type: {e.stderr.strip()}") from e
+
+    if not raw_logs:
+        raise RuntimeError(f"No new commit found, Action cancelled.")
+
+    commits = raw_logs.split("---END_COMMIT---")
+
+    # Regex String Patterns
+    pat_major = r"(BREAKING[ -]CHANGE:|^\w+(\([\w\.-]+\))?!:)"
+    pat_minor = r"^feat(\([\w\.-]+\))?:"
+    pat_patch = r"^fix(\([\w\.-]+\))?:"
+
+    has_minor = False
+    has_patch = False
+
+    for commit in commits:
+        commit_str = commit.strip()
+        if not commit_str:
+            continue
+
+        if re.search(pat_major, commit_str, re.MULTILINE):
+            return "major"
+
+        elif re.search(pat_minor, commit_str, re.MULTILINE):
+            has_minor = True
+
+        elif re.search(pat_patch, commit_str, re.MULTILINE):
+            has_patch = True
+
+    if has_minor:
+        return "minor"
+    elif has_patch:
+        return "patch"
+    else:
+        raise RuntimeError("No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). Please specify bump type manually.")
