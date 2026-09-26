@@ -1,3 +1,4 @@
+import json
 import os
 import subprocess
 import tempfile
@@ -7,7 +8,7 @@ from packaging.version import Version
 
 import pytest
 
-# Target modul yang dites
+# Target modul git core
 from git_version_sync.core.git import (
     commit_config_change,
     create_github_release,
@@ -23,11 +24,20 @@ from git_version_sync.core.git import (
     reset_soft_head,
 )
 
+# Target modul config_handler & utils (Sesuai dengan __init__.py kamu)
+from git_version_sync.config_handlers import (
+    get_config_parser,
+    JsonConfigParser,
+    TomlConfigParser,
+)
+from git_version_sync.utils import get_config_path
+
 
 @pytest.fixture
 def temp_git_repo():
     """Membuat temporary git repository untuk isolasi testing integration."""
     with tempfile.TemporaryDirectory() as tmpdir:
+        original_cwd = os.getcwd()
         os.chdir(tmpdir)
 
         # Initialize git repo
@@ -43,8 +53,8 @@ def temp_git_repo():
             check=True,
         )
 
-        # Create initial commit
-        Path("pyproject.toml").write_text('version = "1.0.0"')
+        # Create initial commit with pyproject.toml
+        Path("pyproject.toml").write_text('[project]\nname = "test"\nversion = "1.0.0"\n')
         subprocess.run(
             ["git", "add", "pyproject.toml"],
             capture_output=True,
@@ -57,6 +67,7 @@ def temp_git_repo():
         )
 
         yield tmpdir
+        os.chdir(original_cwd)
 
 
 class TestGetGitPath:
@@ -70,21 +81,88 @@ class TestGetGitPath:
     def test_get_git_path_not_a_git_repo(self):
         """Harus melempar RuntimeError ketika berada di luar git repository."""
         with tempfile.TemporaryDirectory() as tmpdir:
+            original_cwd = os.getcwd()
             os.chdir(tmpdir)
-            with pytest.raises(RuntimeError, match="Not a Git repository"):
-                get_git_path()
+            try:
+                with pytest.raises(RuntimeError, match="Not a Git repository"):
+                    get_git_path()
+            finally:
+                os.chdir(original_cwd)
+
+
+class TestGetConfigPath:
+    """Test get_config_path dengan fitur multi-platform dan custom path."""
+
+    def test_auto_detect_pyproject(self, temp_git_repo):
+        """Harus mendeteksi pyproject.toml secara otomatis jika ada."""
+        assert get_config_path().name == "pyproject.toml"
+
+    def test_auto_detect_package_json(self, temp_git_repo):
+        """Harus mendeteksi package.json jika pyproject/cargo tidak ada."""
+        Path("pyproject.toml").unlink()
+        Path("package.json").write_text('{\n  "name": "test",\n  "version": "1.0.0"\n}\n')
+        assert get_config_path().name == "package.json"
+
+    def test_custom_config_path(self, temp_git_repo):
+        """Harus menggunakan file konfigurasi kustom jika parameter config_path diberikan."""
+        custom_file = Path("custom_config.json")
+        custom_file.write_text('{"version": "1.0.0"}')
+
+        path = get_config_path(custom_file)
+        assert path.name == "custom_config.json"
+
+    def test_custom_config_not_found(self, temp_git_repo):
+        """Harus melempar RuntimeError jika file kustom tidak ditemukan."""
+        with pytest.raises(RuntimeError, match="Config file not found"):
+            get_config_path(Path("nonexistent.toml"))
+
+
+class TestConfigParsers:
+    """Test unit untuk pembacaan dan pembaruan versi multi-platform."""
+
+    def test_toml_parser_read_and_update(self, tmp_path):
+        toml_file = tmp_path / "pyproject.toml"
+        toml_file.write_text('[project]\nname = "app"\nversion = "1.0.0"\n')
+
+        parser = get_config_parser(toml_file)
+        assert isinstance(parser, TomlConfigParser)
+        assert parser.get_version() == Version("1.0.0")
+
+        parser.update_version(Version("1.1.0"))
+        assert parser.get_version() == Version("1.1.0")
+        assert 'version = "1.1.0"' in toml_file.read_text()
+
+    def test_json_parser_read_and_update(self, tmp_path):
+        json_file = tmp_path / "package.json"
+        json_file.write_text('{\n  "name": "app",\n  "version": "1.0.0"\n}\n')
+
+        parser = get_config_parser(json_file)
+        assert isinstance(parser, JsonConfigParser)
+        assert parser.get_version() == Version("1.0.0")
+
+        parser.update_version(Version("2.0.0"))
+        assert parser.get_version() == Version("2.0.0")
+
+        data = json.loads(json_file.read_text())
+        assert data["version"] == "v2.0.0"
+
+    def test_unsupported_config_file(self, tmp_path):
+        unsupported_file = tmp_path / "config.yaml"
+        unsupported_file.write_text("version: 1.0.0")
+        # Melempar RuntimeError sesuai dengan __init__.py
+        with pytest.raises(RuntimeError, match="Unsupported configuration file type"):
+            get_config_parser(unsupported_file)
 
 
 class TestCommitConfigChange:
-    """Test commit_config_change function."""
+    """Test commit_config_change function untuk berbagai format file."""
 
-    def test_commit_config_change_success(self, temp_git_repo):
-        """Harus berhasil membuat commit perubahan versi."""
-        Path("pyproject.toml").write_text('version = "1.1.0"')
+    def test_commit_config_change_toml(self, temp_git_repo):
+        """Harus berhasil membuat commit perubahan versi pada pyproject.toml."""
+        parser = get_config_parser(Path("pyproject.toml"))
+        parser.update_version(Version("1.1.0"))
 
-        with patch("git_version_sync.core.git.get_config_path") as mock_config:
-            mock_config.return_value = Path("pyproject.toml")
-            commit_config_change(Version("1.1.0"))
+        commit_config_change(Version("1.1.0"))
 
         result = subprocess.run(
             ["git", "log", "--oneline"],
@@ -94,11 +172,31 @@ class TestCommitConfigChange:
         )
         assert "bump version to v1.1.0" in result.stdout
 
+    def test_commit_config_change_json(self, temp_git_repo):
+        """Harus berhasil membuat commit perubahan versi pada package.json."""
+        Path("pyproject.toml").unlink()
+        json_path = Path("package.json")
+        json_path.write_text('{\n  "name": "test",\n  "version": "1.0.0"\n}\n')
+
+        subprocess.run(["git", "add", "package.json"], check=True)
+        subprocess.run(["git", "commit", "-m", "add package.json"], check=True)
+
+        parser = get_config_parser(json_path)
+        parser.update_version(Version("1.2.0"))
+
+        commit_config_change(Version("1.2.0"))
+
+        result = subprocess.run(
+            ["git", "log", "--oneline"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        assert "bump version to v1.2.0" in result.stdout
+
     def test_commit_nothing_to_commit(self, temp_git_repo):
         """Harus menangani kondisi 'nothing to commit' tanpa melempar error."""
-        with patch("git_version_sync.core.git.get_config_path") as mock_config:
-            mock_config.return_value = Path("pyproject.toml")
-            commit_config_change(Version("1.0.0"))
+        commit_config_change(Version("1.0.0"))
 
 
 class TestDeleteTag:
