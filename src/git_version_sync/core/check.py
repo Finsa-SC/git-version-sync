@@ -1,4 +1,4 @@
-import subprocess, tomllib
+import subprocess
 from pathlib import Path
 
 from packaging.version import Version

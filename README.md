@@ -1,16 +1,17 @@
 # git-version-sync
 
-A command-line tool to synchronize semantic versions between Git tags and `pyproject.toml`.
+A command-line tool to synchronize semantic versions between Git tags and project configuration files.
 
 **Links:** [Repository](https://github.com/Finsa-SC/git-version-sync) · [PyPI](https://pypi.org/project/git-version-sync/) · [Issues](https://github.com/Finsa-SC/git-version-sync/issues)
 
 ## Features
 
-- **Check** version status and consistency between Git tags and `pyproject.toml`
+- **Check** version status and consistency between Git tags and project configuration
 - **Sync** version discrepancies with flexible sync directions
-- **Bump** versions following semantic versioning (major, minor, patch)
+- **Bump** versions following semantic versioning (major, minor, patch, auto)
 - **Push** commits and tags to remote repository
 - **Undo** version bumps with optional remote cleanup
+- **Auto-detect** configuration files (pyproject.toml, package.json, Cargo.toml)
 - **GitHub Release** integration for automated release creation
 - **Dry-run mode** to preview changes before execution
 - **Custom annotations** for Git tags
@@ -19,7 +20,7 @@ A command-line tool to synchronize semantic versions between Git tags and `pypro
 ## Installation
 
 ### Requirements
-- Python >= 3.11
+- Python >= 3.10
 - Git
 
 ### Via PyPI (Recommended)
@@ -42,11 +43,20 @@ cd git-version-sync
 pip install -e .
 ```
 
+## Supported Configuration Files
+
+The tool automatically detects and supports:
+- `pyproject.toml` (Python projects)
+- `package.json` (Node.js projects)
+- `Cargo.toml` (Rust projects)
+
+Detection happens in that order. The first file found will be used.
+
 ## Usage
 
 ### Check Command
 
-Verify version consistency between Git tags and `pyproject.toml`:
+Verify version consistency between Git tags and project configuration:
 
 ```bash
 git-version-sync check
@@ -64,22 +74,25 @@ git-version-sync sync
 ```
 
 **Options (mutually exclusive):**
-- `--to-git` - Force `pyproject.toml` version to match the highest Git tag
-- `--to-config` - Force Git tag to match `pyproject.toml` version
+- `--to-git` - Force config version to match the highest Git tag
+- `--to-config` - Force Git tag to match the version in project config
 
 ### Bump Command
 
-Increment the version in `pyproject.toml` and create a corresponding Git tag:
+Increment the version in configuration file and create a corresponding Git tag:
 
 ```bash
-git-version-sync bump {major|minor|patch}
+git-version-sync bump {major|minor|patch|auto}
 ```
+
+**Arguments:**
+- `part` - Version part to increment (major, minor, patch, auto). Default: auto (determines automatically)
 
 **Options:**
 - `-f, --force` - Force bump even if version mismatch occurs
 - `-p, --push` - Automatically push commit and tag to remote
 - `-m, --message MESSAGE` - Custom annotation message for the Git tag
-- `-r, --release [NOTES]` - Create a GitHub release for the bumped version
+- `-r, --release [NOTES]` - Create a GitHub release for the bumped version (requires 'gh' CLI)
 - `-d, --draft` - Save the GitHub release as a draft (requires `--release`)
 - `-n, --dry-run` - Perform a dry run without making any actual changes
 
@@ -117,33 +130,39 @@ git-version-sync undo
 ### Check current version status
 ```bash
 $ git-version-sync check
-Version is synchronized with highest local tag (v1.8.1)
+Version is synchronized with highest local tag (v1.10.0)
 ```
 
 ### Check without fetching from remote
 ```bash
 $ git-version-sync check --no-fetch
-Version is synchronized with highest local tag (v1.8.1)
+Version is synchronized with highest local tag (v1.10.0)
 ```
 
 ### Bump patch version
 ```bash
 $ git-version-sync bump patch
-Success bump version to v1.7.1
+Success bump version to v1.10.1
+```
+
+### Bump with auto-detection (default)
+```bash
+$ git-version-sync bump
+Success bump version to v1.10.1
 ```
 
 ### Bump minor version with custom message
 ```bash
 $ git-version-sync bump minor -m "Add new features"
-Success bump version to v1.8.0
+Success bump version to v1.11.0
 ```
 
 ### Bump patch version with push and GitHub release
 ```bash
 $ git-version-sync bump patch -p -r "Bug fixes and improvements"
-Success bump version to v1.7.1
+Success bump version to v1.10.1
 Pushing commit and tag to remote...
-Created GitHub Release v1.7.1
+Created GitHub Release v1.10.1
 ```
 
 ### Bump major version as draft release
@@ -157,12 +176,12 @@ Created GitHub Release v2.0.0 (draft)
 ### Dry-run preview before bumping
 ```bash
 $ git-version-sync bump minor -m "Release" -p --dry-run
-Updated pyproject.toml to v1.9.0 (DRY RUN)
-Committed changes: 'bump version to v1.9.0' (DRY RUN)
-Created Git tag v1.9.0 (DRY RUN)
+Updated project config to v1.11.0 (DRY RUN)
+Committed changes: 'bump version to v1.11.0' (DRY RUN)
+Created Git tag v1.11.0 (DRY RUN)
 Pushed commit and tag to remote (DRY RUN)
 
-Success bump version to v1.9.0 (DRY RUN - no changes made)
+Success bump version to v1.11.0 (DRY RUN - no changes made)
 ```
 
 ### Push to remote
@@ -173,7 +192,7 @@ Pushing branch and tags to remote...
 
 ### Push specific tags
 ```bash
-$ git-version-sync push v1.8.1 v1.8.0
+$ git-version-sync push v1.10.0 v1.10.1
 Pushing specified tags to remote...
 ```
 
@@ -186,29 +205,31 @@ Pushing all local tags to remote...
 ### Undo latest version bump
 ```bash
 $ git-version-sync undo
-Are you sure you want to undo v1.8.0? (y/n): y
+Are you sure you want to undo v1.10.1? (y/n): y
 Successfully undone version bump
 ```
 
 ### Undo specific version and delete from remote
 ```bash
-$ git-version-sync undo v1.8.1 -r -f
-Successfully undone v1.8.1 and deleted from remote
+$ git-version-sync undo v1.10.1 -r -f
+Successfully undone v1.10.1 and deleted from remote
 ```
 
 ### Display version
 ```bash
 $ git-version-sync --version
-git-version-sync 1.7.0
+git-version-sync 1.10.0
 ```
 
 ## Dependencies
 
 - `packaging>=26.3` - For version parsing and comparison
+- `pytest>=9.1.1` - Testing framework
+- `pytest-mock>=3.15.1` - Mocking library for tests
 
 ## License
 
-See LICENSE file for details.
+MIT - See LICENSE file for details
 
 ## Author
 
