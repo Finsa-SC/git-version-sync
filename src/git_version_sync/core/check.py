@@ -81,7 +81,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
     missing_in_remote = get_missing_remote_tags(remote_tags, local_tags)
 
     # Check if local version match but missing from remote
-    if (highest_local_version == config_tag and missing_in_remote) or missing_in_local:
+    if highest_local_version == config_tag and (missing_in_remote or missing_in_local):
         status = "behind" if highest_remote > highest_local_version else "ahead of"
         output.append(f"Config matches local tag (v{config_tag}), but local is {status} remote!")
 
