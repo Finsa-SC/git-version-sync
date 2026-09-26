@@ -12,6 +12,7 @@ def main():
             case 'bump':
                 bump_request = BumpRequest(
                     args.part,
+                    config_path=args.config,
                     tag_message=args.message,
                     force=args.force,
                     push=args.push,

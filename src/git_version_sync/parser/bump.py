@@ -1,3 +1,5 @@
+from pathlib import Path
+
 def bump_subparse(subparsers):
     bump_parser = subparsers.add_parser(
         "bump",
@@ -46,4 +48,11 @@ def bump_subparse(subparsers):
         "--dry-run",
         action="store_true",
         help="Perform a dry run without making any actual changes"
+    )
+    bump_parser.add_argument(
+        "-c",
+        "--config",
+        type=Path,
+        metavar="PATH",
+        help="Path to a custom configuration file (e.g. pyproject.toml, Cargo.toml, package.json)"
     )
