@@ -1,6 +1,7 @@
 import subprocess, tomllib
 from packaging.version import Version
 
+from git_version_sync.config_handlers import get_config_parser
 from git_version_sync.core.git import get_remote_tags, fetch_remote_tags
 from git_version_sync.networks import check_network
 from git_version_sync.utils import get_config_path
@@ -32,15 +33,10 @@ def parse_highest_verion(tags: set[str]) -> Version|None:
 def get_config_tag() -> Version:
     config_path = get_config_path()
 
-    with config_path.open('rb') as f:
-        config = tomllib.load(f)
-        project_config = config.get('project', {})
-        config_tag = project_config.get("version", None)
+    config_parser = get_config_parser(config_path)
+    config_tag = config_parser.get_version()
 
-    if config_tag is None:
-        raise ValueError("No version found in project config.")
-
-    return Version(config_tag)
+    return config_tag
 
 def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
     missing_in_local = remote_tags - local_tags

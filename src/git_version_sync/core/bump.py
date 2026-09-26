@@ -3,6 +3,7 @@ from packaging.version import Version
 
 from .git import commit_config_change, push_to_remote, create_github_release
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
+from ..config_handlers import get_config_parser
 from ..models import BumpRequest, BumpType
 from ..networks import check_network
 from ..utils import get_config_path
@@ -25,24 +26,16 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
 
 def bump_config_version(new_version: Version) -> None:
     config_path = get_config_path()
-    content = config_path.read_text(encoding="utf-8")
 
-    pattern = r'^(version\s*=\s*["\']).*?(["\'])'
-    replacement = rf'\g<1>{new_version}\g<2>'
-
-    new_content, count = re.subn(pattern, replacement, content, flags=re.MULTILINE)
-
-    if count == 0:
-        raise RuntimeError(f"Version field not found in {config_path.stem}")
-
-    config_path.write_text(new_content, encoding="utf-8")
+    config_parser = get_config_parser(config_path)
+    config_parser.update_version(new_version)
 
 def bump_version(
         request: BumpRequest,
         new_version: Version,
 ) -> None:
     bump_config_version(new_version)
-    print(f"Updated pyproject.toml to v{new_version}")
+    print(f"Updated {get_config_path().name} to v{new_version}")
 
     commit_config_change(new_version)
     print(f"Committed changes: 'bump version to v{new_version}'")

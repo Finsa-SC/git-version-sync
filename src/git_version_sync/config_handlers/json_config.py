@@ -1,7 +1,7 @@
 import json
 from packaging.version import Version
 
-from base import BaseConfigParser
+from .base import BaseConfigParser
 
 class JsonConfigParser(BaseConfigParser):
     def get_version(self) -> Version:

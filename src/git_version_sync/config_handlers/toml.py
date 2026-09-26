@@ -1,7 +1,7 @@
 import re
 from packaging.version import Version
 
-from base import BaseConfigParser
+from .base import BaseConfigParser
 
 class TomlConfigParser(BaseConfigParser):
     def get_version(self) -> Version:
