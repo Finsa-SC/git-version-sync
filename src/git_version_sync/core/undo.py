@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from packaging.version import Version
 
 from git_version_sync.core.bump import bump_config_version
@@ -22,7 +24,7 @@ def get_previous_version(version_list: set[str]) -> Version|None:
         return None
     return sorted_tags[-2]
 
-def do_undo(tag: str|None=None, remote:bool=False, force:bool=False) -> None:
+def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name: Path|None=None) -> None:
     local_tags = get_local_tags()
     latest_tag = parse_highest_verion(local_tags)
 
@@ -52,10 +54,10 @@ def do_undo(tag: str|None=None, remote:bool=False, force:bool=False) -> None:
         previous_version = get_previous_version(local_tags)
 
         if previous_version:
-            bump_config_version(previous_version)
-            print(f"Reverted {get_config_path().name} version to v{previous_version}")
+            bump_config_version(previous_version, config_name)
+            print(f"Reverted {get_config_path(config_name).name} version to v{previous_version}")
         else:
-            print(f"Skipped {get_config_path()} revert (no previous tag found).")
+            print(f"Skipped {get_config_path(config_name)} revert (no previous tag found).")
 
     else:
         print(f"Tag v{target_tag} is not the latest version (current: v{latest_tag}).")

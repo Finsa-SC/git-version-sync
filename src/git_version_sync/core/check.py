@@ -1,4 +1,6 @@
 import subprocess, tomllib
+from pathlib import Path
+
 from packaging.version import Version
 
 from git_version_sync.config_handlers import get_config_parser
@@ -30,8 +32,8 @@ def parse_highest_verion(tags: set[str]) -> Version|None:
 
     return max(valid_version) if valid_version else None
 
-def get_config_tag() -> Version:
-    config_path = get_config_path()
+def get_config_tag(config_name: Path|None=None) -> Version:
+    config_path = get_config_path(config_name)
 
     config_parser = get_config_parser(config_path)
     config_tag = config_parser.get_version()
@@ -43,8 +45,8 @@ def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[s
 
     return missing_in_local
 
-def do_check(no_fetch: bool=False) -> str:
-    config_tag = get_config_tag()
+def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
+    config_tag = get_config_tag(config_name)
     local_tags = get_local_tags()
 
     highest_local_version = parse_highest_verion(local_tags)

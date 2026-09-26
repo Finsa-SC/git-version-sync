@@ -27,12 +27,14 @@ def main():
             case 'sync':
                 print(do_sync(
                     args.to_git,
-                    args.to_config
+                    args.to_config,
+                    config_name=args.config,
                 ))
 
             case 'check':
                 print(do_check(
-                    args.no_fetch
+                    config_name=args.config,
+                    no_fetch=args.no_fetch,
                 ))
 
             case 'push':
@@ -43,6 +45,7 @@ def main():
                     args.target,
                     remote=args.remote,
                     force=args.force,
+                    config_name=args.config,
                 )
 
             case _:

@@ -1,5 +1,6 @@
 import argparse
 from importlib.metadata import version, PackageNotFoundError
+from pathlib import Path
 
 from git_version_sync.parser import check_subparse, sync_subparse, bump_subparse, push_subparse, undo_subparse
 
@@ -22,6 +23,13 @@ def create_parser():
         "--version",
         action="version",
         version=f"%(prog)s {pkg_version}"
+    )
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=Path,
+        metavar="PATH",
+        help="Path to a custom configuration file (e.g. pyproject.toml, Cargo.toml, package.json)"
     )
 
     check_subparse(subparsers)

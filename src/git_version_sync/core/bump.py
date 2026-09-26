@@ -1,4 +1,6 @@
 import subprocess, re
+from pathlib import Path
+
 from packaging.version import Version
 
 from .git import commit_config_change, push_to_remote, create_github_release
@@ -24,18 +26,20 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
         check=True
     )
 
-def bump_config_version(new_version: Version) -> None:
-    config_path = get_config_path()
+def bump_config_version(new_version: Version, config_name: Path|None=None) -> None:
+    config_path = get_config_path(config_name)
 
     config_parser = get_config_parser(config_path)
+    print(f"Update {config_path.name} to {new_version}")
     config_parser.update_version(new_version)
 
 def bump_version(
         request: BumpRequest,
         new_version: Version,
+        config_path: Path
 ) -> None:
-    bump_config_version(new_version)
-    print(f"Updated {get_config_path().name} to v{new_version}")
+    bump_config_version(new_version, config_path)
+    print(f"Updated {config_path.name} to v{new_version}")
 
     commit_config_change(new_version)
     print(f"Committed changes: 'bump version to v{new_version}'")
@@ -52,9 +56,9 @@ def bump_version(
         draft_str = " (Draft)" if request.draft else ""
         print(f"Created GitHub Release v{new_version}{draft_str}")
 
-def format_dry_run_output(request: BumpRequest, new_version: Version) -> str:
+def format_dry_run_output(request: BumpRequest, new_version: Version, config_path: Path) -> str:
     output: list[str] = [
-        f"Would update {get_config_path(request.config_path)} to v{new_version} (DRY RUN)",
+        f"Would update {config_path.name} to v{new_version} (DRY RUN)",
         f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
         f"Would create Git tag v{new_version} (DRY RUN)",
     ]
@@ -91,6 +95,8 @@ def do_bump(request: BumpRequest):
     if request.push:
         check_network()
 
+    config_path = get_config_path(request.config_path)
+
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
 
@@ -124,11 +130,16 @@ def do_bump(request: BumpRequest):
 
     # Dry run
     if request.dry_run:
-        return format_dry_run_output(request, new_version)
+        return format_dry_run_output(
+            request,
+            new_version,
+            config_path
+        )
 
     bump_version(
         request,
-        new_version
+        new_version,
+        config_path
     )
 
     return f"\nSuccess bump version to v{new_version}"
