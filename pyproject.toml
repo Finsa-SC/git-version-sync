@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [
     { name = "Finsa-SC", email = "finsakusumaputra@gmail.com" }
 ]
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 keywords = ["git", "versioning", "semver", "pyproject", "cli"]
 
