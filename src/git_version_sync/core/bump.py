@@ -61,7 +61,7 @@ def bump_version(
 
 def format_dry_run_output(request: BumpRequest, new_version: Version) -> str:
     output: list[str] = [
-        f"Would update pyproject.toml to v{new_version} (DRY RUN)",
+        f"Would update {get_config_path(request.config_path)} to v{new_version} (DRY RUN)",
         f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
         f"Would create Git tag v{new_version} (DRY RUN)",
     ]
