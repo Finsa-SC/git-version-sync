@@ -3,7 +3,7 @@ from pathlib import Path
 def bump_subparse(subparsers):
     bump_parser = subparsers.add_parser(
         "bump",
-        help="Increment version in pyproject.toml and create a corresponding Git tag"
+        help="Increment project version in configuration file and create a corresponding Git tag"
     )
     bump_parser.add_argument(
         "part",

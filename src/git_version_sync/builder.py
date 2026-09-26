@@ -7,7 +7,7 @@ from git_version_sync.parser import check_subparse, sync_subparse, bump_subparse
 def create_parser():
     parser = argparse.ArgumentParser(
         prog="git-version-sync",
-        description="Sync Git tags and pyproject.toml versions.",
+        description="Sync Git tags and project config versions.",
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
