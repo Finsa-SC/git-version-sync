@@ -1,8 +1,11 @@
 import subprocess, re
+from pathlib import Path
+
 from packaging.version import Version
 
 from .git import commit_config_change, push_to_remote, create_github_release
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
+from ..config_handlers import get_config_parser
 from ..models import BumpRequest, BumpType
 from ..networks import check_network
 from ..utils import get_config_path
@@ -23,26 +26,20 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
         check=True
     )
 
-def bump_config_version(new_version: Version) -> None:
-    config_path = get_config_path()
-    content = config_path.read_text(encoding="utf-8")
+def bump_config_version(new_version: Version, config_name: Path|None=None) -> None:
+    config_path = get_config_path(config_name)
 
-    pattern = r'^(version\s*=\s*["\']).*?(["\'])'
-    replacement = rf'\g<1>{new_version}\g<2>'
-
-    new_content, count = re.subn(pattern, replacement, content, flags=re.MULTILINE)
-
-    if count == 0:
-        raise RuntimeError(f"Version field not found in {config_path.stem}")
-
-    config_path.write_text(new_content, encoding="utf-8")
+    config_parser = get_config_parser(config_path)
+    print(f"Update {config_path.name} to {new_version}")
+    config_parser.update_version(new_version)
 
 def bump_version(
         request: BumpRequest,
         new_version: Version,
+        config_path: Path
 ) -> None:
-    bump_config_version(new_version)
-    print(f"Updated pyproject.toml to v{new_version}")
+    bump_config_version(new_version, config_path)
+    print(f"Updated {config_path.name} to v{new_version}")
 
     commit_config_change(new_version)
     print(f"Committed changes: 'bump version to v{new_version}'")
@@ -59,9 +56,9 @@ def bump_version(
         draft_str = " (Draft)" if request.draft else ""
         print(f"Created GitHub Release v{new_version}{draft_str}")
 
-def format_dry_run_output(request: BumpRequest, new_version: Version) -> str:
+def format_dry_run_output(request: BumpRequest, new_version: Version, config_path: Path) -> str:
     output: list[str] = [
-        f"Would update pyproject.toml to v{new_version} (DRY RUN)",
+        f"Would update {config_path.name} to v{new_version} (DRY RUN)",
         f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
         f"Would create Git tag v{new_version} (DRY RUN)",
     ]
@@ -98,6 +95,8 @@ def do_bump(request: BumpRequest):
     if request.push:
         check_network()
 
+    config_path = get_config_path(request.config_path)
+
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
 
@@ -131,11 +130,16 @@ def do_bump(request: BumpRequest):
 
     # Dry run
     if request.dry_run:
-        return format_dry_run_output(request, new_version)
+        return format_dry_run_output(
+            request,
+            new_version,
+            config_path
+        )
 
     bump_version(
         request,
-        new_version
+        new_version,
+        config_path
     )
 
     return f"\nSuccess bump version to v{new_version}"

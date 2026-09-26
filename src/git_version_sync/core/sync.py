@@ -1,18 +1,19 @@
+from pathlib import Path
+
 from .bump import bump_config_version, bump_git_tag
 from .check import get_config_tag, get_local_tags, parse_highest_verion
 from .git import fetch_remote_tags, is_branch_behind_remote
 from ..networks import check_network
 
 
-def do_sync(to_git: bool=False, to_config: bool=False) -> str:
+def do_sync(to_git: bool=False, to_config: bool=False, config_name: Path|None=None) -> str:
     check_network()
     fetch_remote_tags()
 
-    config_tag = get_config_tag()
+    config_tag = get_config_tag(config_name)
     local_tags = get_local_tags()
 
     highest_local_tag = parse_highest_verion(local_tags)
-
     if config_tag == highest_local_tag:
         return f"Already in sync at (v{config_tag})"
 
@@ -24,7 +25,7 @@ def do_sync(to_git: bool=False, to_config: bool=False) -> str:
 
     if to_git:
         if highest_local_tag:
-            bump_config_version(highest_local_tag)
+            bump_config_version(highest_local_tag, config_name)
             return f"Synced config version to match Git tag v{highest_local_tag}"
         else:
             raise RuntimeError("No git tag found on local.")
@@ -39,8 +40,10 @@ def do_sync(to_git: bool=False, to_config: bool=False) -> str:
         else:
             target_version = config_tag
 
+        print(f"target: {target_version}")
         if highest_local_tag and highest_local_tag > config_tag:
-            bump_config_version(target_version)
+            print("Bump config")
+            bump_config_version(target_version, config_name)
         else:
             bump_git_tag(target_version)
 

@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from packaging.version import Version
 
 from git_version_sync.core.bump import bump_config_version
@@ -10,6 +12,8 @@ from git_version_sync.core.git import (
     reset_soft_head,
     get_remote_tags
 )
+from git_version_sync.utils import get_config_path
+
 
 def get_previous_version(version_list: set[str]) -> Version|None:
     parsed_versions = [Version(ver.lstrip("v")) for ver in version_list]
@@ -20,7 +24,7 @@ def get_previous_version(version_list: set[str]) -> Version|None:
         return None
     return sorted_tags[-2]
 
-def do_undo(tag: str|None=None, remote:bool=False, force:bool=False) -> None:
+def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name: Path|None=None) -> None:
     local_tags = get_local_tags()
     latest_tag = parse_highest_verion(local_tags)
 
@@ -50,14 +54,14 @@ def do_undo(tag: str|None=None, remote:bool=False, force:bool=False) -> None:
         previous_version = get_previous_version(local_tags)
 
         if previous_version:
-            bump_config_version(previous_version)
-            print(f"Reverted pyproject.toml version to v{previous_version}")
+            bump_config_version(previous_version, config_name)
+            print(f"Reverted {get_config_path(config_name).name} version to v{previous_version}")
         else:
-            print("Skipped pyproject.toml revert (no previous tag found).")
+            print(f"Skipped {get_config_path(config_name)} revert (no previous tag found).")
 
     else:
         print(f"Tag v{target_tag} is not the latest version (current: v{latest_tag}).")
-        print("Skipped resetting pyproject.toml and git commit to preserve history.")
+        print(f"Skipped resetting {get_config_path().name} and git commit to preserve history.")
 
     if remote:
         delete_remote_tag(target_tag)
