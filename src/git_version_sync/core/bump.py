@@ -3,7 +3,7 @@ from pathlib import Path
 
 from packaging.version import Version
 
-from .git import commit_config_change, push_to_remote, create_github_release, detect_bump_type
+from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..config_handlers import get_config_parser
 from ..models import BumpRequest, BumpType
@@ -89,6 +89,47 @@ def calculate_next_version(base_version: Version, bump_type: BumpType) -> str:
             return get_new_minor(base_version)
         case "patch":
             return get_new_patch(base_version)
+
+def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
+    # Regex String Patterns
+    pat_major = r"(BREAKING[ -]CHANGE:|^\w+(\([\w\.-]+\))?!:)"
+    pat_minor = r"^feat(\([\w\.-]+\))?:"
+    pat_patch = r"^fix(\([\w\.-]+\))?:"
+
+    major_count = 0
+    minor_count = 0
+    patch_count = 0
+
+    for commit in get_commit_since_tag(base_version):
+        commit_str = commit.strip()
+        if not commit_str:
+            continue
+
+        if re.search(pat_major, commit_str, re.MULTILINE):
+            major_count += 1
+
+        elif re.search(pat_minor, commit_str, re.MULTILINE):
+            minor_count += 1
+
+        elif re.search(pat_patch, commit_str, re.MULTILINE):
+            patch_count += 1
+
+    if major_count > 0:
+        reason = f"Detected {major_count} BREAKING CHANGE commit(s) since v{base_version}"
+        return "major", reason
+
+    if minor_count > 0:
+        reason = f"Detected {minor_count} 'feat' commit(s) since v{base_version}"
+        return "minor", reason
+
+    if patch_count > 0:
+        reason = f"Detected {patch_count} 'fix' commit(s) since v{base_version}"
+        return "patch", reason
+
+    raise RuntimeError(
+        "No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). "
+        "Please specify bump type manually."
+    )
 
 def do_bump(request: BumpRequest):
     if request.push:
