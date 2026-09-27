@@ -101,7 +101,7 @@ def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
     patch_count = 0
 
     for commit in get_commit_since_tag(base_version):
-        commit_str = commit.strip()
+        commit_str = commit['message'].strip()
         if not commit_str:
             continue
 

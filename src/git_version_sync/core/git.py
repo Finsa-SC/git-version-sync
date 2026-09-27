@@ -1,8 +1,6 @@
-import re
 import subprocess, shutil
 from pathlib import Path
 from packaging.version import Version
-from git_version_sync.models import BumpType
 from git_version_sync.utils import get_config_path
 
 def commit_config_change(new_version: Version) -> None:
@@ -210,7 +208,7 @@ def is_branch_behind_remote() -> bool:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
 
-def get_commit_since_tag(base_version: Version):
+def get_commit_since_tag(base_version: Version) -> list:
     command = [
         "git", "log",
         f"v{base_version}..HEAD",
@@ -229,9 +227,18 @@ def get_commit_since_tag(base_version: Version):
         if not raw_logs:
             raise RuntimeError(f"No new commit found, Action cancelled.")
 
-        commits = raw_logs.split("---END_COMMIT---")
+        parsed_commits = []
+        raw_commits = [commit.strip() for commit in raw_logs.split("---END_COMMIT---") if commit.strip()]
 
-        return commits
+        for raw_commit in raw_commits:
+            if "\x1f" in raw_commit:
+                commit_hash, msg = raw_commit.split("\x1f", 1)
+                parsed_commits.append({
+                    "hash": commit_hash,
+                    "message": msg
+                })
+
+        return parsed_commits
 
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to collect git log: {e.stderr.strip()}") from e
