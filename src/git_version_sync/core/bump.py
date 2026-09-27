@@ -3,6 +3,7 @@ from pathlib import Path
 
 from packaging.version import Version
 
+from .changelog import generate_changelog
 from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..config_handlers import get_config_parser
@@ -34,6 +35,7 @@ def bump_config_version(new_version: Version, config_name: Path|None=None) -> No
 
 def bump_version(
         request: BumpRequest,
+        base_version: Version,
         new_version: Version,
         config_path: Path
 ) -> None:
@@ -51,7 +53,13 @@ def bump_version(
         print("Pushed commit and tag to remote")
 
     if request.release is not None:
-        create_github_release(new_version, request.release, request.draft)
+        if request.release.strip():
+            change_log = request.release
+        else:
+            commits = get_commit_since_tag(base_version)
+            change_log = generate_changelog(commits)
+
+        create_github_release(new_version, change_log, request.draft)
         draft_str = " (Draft)" if request.draft else ""
         print(f"Created GitHub Release v{new_version}{draft_str}")
 
@@ -200,6 +208,7 @@ def do_bump(request: BumpRequest):
 
     bump_version(
         request,
+        base_version,
         new_version,
         config_path
     )
