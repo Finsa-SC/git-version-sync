@@ -212,7 +212,7 @@ def get_commit_since_tag(base_version: Version) -> list:
     command = [
         "git", "log",
         f"v{base_version}..HEAD",
-        "--format=%B%n---END_COMMIT---"
+        "--format=%h%x1f%B%n---END_COMMIT---"
     ]
 
     try:
