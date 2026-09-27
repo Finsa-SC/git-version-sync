@@ -15,3 +15,12 @@ def push_subparse(subparsers):
         action="store_true",
         help="Push all local tags to remote"
     )
+    push_parser.add_argument(
+        "-r",
+        "--release",
+        nargs="?",
+        const="",
+        default=None,
+        metavar="NOTES",
+        help="Create a GitHub release for the bumped version (requires 'gh' CLI)"
+    )

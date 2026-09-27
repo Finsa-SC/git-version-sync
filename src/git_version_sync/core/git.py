@@ -209,12 +209,17 @@ def is_branch_behind_remote() -> bool:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
 
 def get_commit_since_tag(
-        base_version: Version,
+        base_version: Version|None = None,
         target_reff: Version|str = "HEAD"
 ) -> list:
+    if base_version:
+        git_range = f"v{base_version}..{target_reff}"
+    else:
+        git_range = str(target_reff)
+
     command = [
         "git", "log",
-        f"v{base_version}..{target_reff}",
+        git_range,
         "--format=%h%x1f%B%n---END_COMMIT---"
     ]
 
@@ -244,4 +249,6 @@ def get_commit_since_tag(
         return parsed_commits
 
     except subprocess.CalledProcessError as e:
+        if base_version:
+            get_commit_since_tag(None, target_reff)
         raise RuntimeError(f"Failed to collect git log: {e.stderr.strip()}") from e
