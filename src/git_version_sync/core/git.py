@@ -208,10 +208,13 @@ def is_branch_behind_remote() -> bool:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
 
-def get_commit_since_tag(base_version: Version) -> list:
+def get_commit_since_tag(
+        base_version: Version,
+        target_reff: Version|str = "HEAD"
+) -> list:
     command = [
         "git", "log",
-        f"v{base_version}..HEAD",
+        f"v{base_version}..{target_reff}",
         "--format=%h%x1f%B%n---END_COMMIT---"
     ]
 
