@@ -1,7 +1,8 @@
-def undo_subparse(subparsers):
+def undo_subparse(subparsers, parent_parser):
     undo_parser = subparsers.add_parser(
         "undo",
-        help="Undo/rollback the last version bump and delete its corresponding Git tag"
+        help="Undo/rollback the last version bump and delete its corresponding Git tag",
+        parents=[parent_parser] if parent_parser else []
     )
     undo_parser.add_argument(
         "target",

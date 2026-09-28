@@ -6,9 +6,19 @@ from git_version_sync.parser import check_subparse, sync_subparse, bump_subparse
 
 
 def create_parser():
+    parent_parser = argparse.ArgumentParser(add_help=False)
+    parent_parser.add_argument(
+        "-c",
+        "--config",
+        type=Path,
+        metavar="PATH",
+        help="Path to a custom configuration file (e.g. pyproject.toml, Cargo.toml, package.json)"
+    )
+
     parser = argparse.ArgumentParser(
         prog="git-version-sync",
         description="Sync Git tags and project config versions.",
+        parents=[parent_parser]
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -24,18 +34,11 @@ def create_parser():
         action="version",
         version=f"%(prog)s {pkg_version}"
     )
-    parser.add_argument(
-        "-c",
-        "--config",
-        type=Path,
-        metavar="PATH",
-        help="Path to a custom configuration file (e.g. pyproject.toml, Cargo.toml, package.json)"
-    )
 
-    check_subparse(subparsers)
-    sync_subparse(subparsers)
-    bump_subparse(subparsers)
-    push_subparse(subparsers)
-    undo_subparse(subparsers)
+    check_subparse(subparsers, parent_parser)
+    sync_subparse(subparsers, parent_parser)
+    bump_subparse(subparsers, parent_parser)
+    push_subparse(subparsers, parent_parser)
+    undo_subparse(subparsers, parent_parser)
 
     return parser

@@ -1,7 +1,8 @@
-def push_subparse(subparsers):
+def push_subparse(subparsers, parent_parser):
     push_parser = subparsers.add_parser(
         "push",
-        help="Push active branch and Git tags to remote repository"
+        help="Push active branch and Git tags to remote repository",
+        parents=[parent_parser] if parent_parser else []
     )
     push_parser.add_argument(
         "tags",
