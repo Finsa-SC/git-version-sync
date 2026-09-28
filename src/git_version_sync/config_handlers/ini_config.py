@@ -1,7 +1,7 @@
 import configparser
 from pathlib import Path
 from packaging.version import Version
-from base import BaseConfigParser
+from .base import BaseConfigParser
 
 class IniConfigParser(BaseConfigParser):
     def __init__(self, config_path: Path):

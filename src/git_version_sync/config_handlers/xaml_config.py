@@ -1,6 +1,5 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any
 from packaging.version import Version
 
 from .base import BaseConfigParser

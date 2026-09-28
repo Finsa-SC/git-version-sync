@@ -3,7 +3,7 @@ from pathlib import Path
 from packaging.version import Version
 from typing import Any
 
-from base import BaseConfigParser
+from .base import BaseConfigParser
 
 class YamlConfigParser(BaseConfigParser):
     def __init__(self, config_path: Path):
