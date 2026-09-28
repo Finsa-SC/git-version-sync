@@ -24,11 +24,14 @@ from git_version_sync.core.git import (
     reset_soft_head,
 )
 
-# Target modul config_handler & utils (Sesuai dengan __init__.py kamu)
+# Target modul config_handler & utils
 from git_version_sync.config_handlers import (
     get_config_parser,
     JsonConfigParser,
     TomlConfigParser,
+    YamlConfigParser,
+    IniConfigParser,
+    XmlConfigParser,
 )
 from git_version_sync.utils import get_config_path
 
@@ -146,10 +149,46 @@ class TestConfigParsers:
         data = json.loads(json_file.read_text())
         assert data["version"] == "v2.0.0"
 
+    def test_yaml_parser_read_and_update(self, tmp_path):
+        yaml_file = tmp_path / "config.yaml"
+        yaml_file.write_text("version: '1.0.0'\n")
+
+        parser = get_config_parser(yaml_file)
+        assert isinstance(parser, YamlConfigParser)
+        assert parser.get_version() == Version("1.0.0")
+
+        parser.update_version(Version("1.2.0"))
+        assert parser.get_version() == Version("1.2.0")
+        assert "1.2.0" in yaml_file.read_text()
+
+    def test_ini_parser_read_and_update(self, tmp_path):
+        ini_file = tmp_path / "setup.cfg"
+        ini_file.write_text("[metadata]\nname = app\nversion = 1.0.0\n")
+
+        parser = get_config_parser(ini_file)
+        assert isinstance(parser, IniConfigParser)
+        assert parser.get_version() == Version("1.0.0")
+
+        parser.update_version(Version("1.3.0"))
+        assert parser.get_version() == Version("1.3.0")
+        assert "version = 1.3.0" in ini_file.read_text()
+
+    def test_xml_parser_read_and_update(self, tmp_path):
+        xml_file = tmp_path / "pom.xml"
+        xml_file.write_text("<project><version>1.0.0</version></project>")
+
+        parser = get_config_parser(xml_file)
+        assert isinstance(parser, XmlConfigParser)
+        assert parser.get_version() == Version("1.0.0")
+
+        parser.update_version(Version("2.1.0"))
+        assert parser.get_version() == Version("2.1.0")
+        assert "<version>2.1.0</version>" in xml_file.read_text()
+
     def test_unsupported_config_file(self, tmp_path):
-        unsupported_file = tmp_path / "config.yaml"
-        unsupported_file.write_text("version: 1.0.0")
-        # Melempar RuntimeError sesuai dengan __init__.py
+        unsupported_file = tmp_path / "config.unknown"
+        unsupported_file.write_text("version = 1.0.0")
+
         with pytest.raises(RuntimeError, match="Unsupported configuration file type"):
             get_config_parser(unsupported_file)
 
