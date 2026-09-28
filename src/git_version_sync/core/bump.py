@@ -3,7 +3,8 @@ from pathlib import Path
 
 from packaging.version import Version
 
-from .git import commit_config_change, push_to_remote, create_github_release, detect_bump_type
+from .changelog import generate_changelog
+from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag
 from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..config_handlers import get_config_parser
 from ..models import BumpRequest, BumpType
@@ -34,6 +35,7 @@ def bump_config_version(new_version: Version, config_name: Path|None=None) -> No
 
 def bump_version(
         request: BumpRequest,
+        base_version: Version,
         new_version: Version,
         config_path: Path
 ) -> None:
@@ -51,7 +53,13 @@ def bump_version(
         print("Pushed commit and tag to remote")
 
     if request.release is not None:
-        create_github_release(new_version, request.release, request.draft)
+        if request.release.strip():
+            change_log = request.release
+        else:
+            commits = get_commit_since_tag(base_version)
+            change_log = generate_changelog(commits)
+
+        create_github_release(new_version, change_log, request.draft)
         draft_str = " (Draft)" if request.draft else ""
         print(f"Created GitHub Release v{new_version}{draft_str}")
 
@@ -89,6 +97,47 @@ def calculate_next_version(base_version: Version, bump_type: BumpType) -> str:
             return get_new_minor(base_version)
         case "patch":
             return get_new_patch(base_version)
+
+def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
+    # Regex String Patterns
+    pat_major = r"(BREAKING[ -]CHANGE:|^\w+(\([\w\.-]+\))?!:)"
+    pat_minor = r"^feat(\([\w\.-]+\))?:"
+    pat_patch = r"^fix(\([\w\.-]+\))?:"
+
+    major_count = 0
+    minor_count = 0
+    patch_count = 0
+
+    for commit in get_commit_since_tag(base_version):
+        commit_str = commit['message'].strip()
+        if not commit_str:
+            continue
+
+        if re.search(pat_major, commit_str, re.MULTILINE):
+            major_count += 1
+
+        elif re.search(pat_minor, commit_str, re.MULTILINE):
+            minor_count += 1
+
+        elif re.search(pat_patch, commit_str, re.MULTILINE):
+            patch_count += 1
+
+    if major_count > 0:
+        reason = f"Detected {major_count} BREAKING CHANGE commit(s) since v{base_version}"
+        return "major", reason
+
+    if minor_count > 0:
+        reason = f"Detected {minor_count} 'feat' commit(s) since v{base_version}"
+        return "minor", reason
+
+    if patch_count > 0:
+        reason = f"Detected {patch_count} 'fix' commit(s) since v{base_version}"
+        return "patch", reason
+
+    raise RuntimeError(
+        "No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). "
+        "Please specify bump type manually."
+    )
 
 def do_bump(request: BumpRequest):
     if request.push:
@@ -159,6 +208,7 @@ def do_bump(request: BumpRequest):
 
     bump_version(
         request,
+        base_version,
         new_version,
         config_path
     )

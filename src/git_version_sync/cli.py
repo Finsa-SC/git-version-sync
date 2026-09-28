@@ -38,7 +38,11 @@ def main():
                 ))
 
             case 'push':
-                do_push(args.tags, args.all)
+                do_push(
+                    args.tags,
+                    args.all,
+                    args.release,
+                )
 
             case 'undo':
                 do_undo(

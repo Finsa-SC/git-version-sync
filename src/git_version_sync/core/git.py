@@ -1,8 +1,6 @@
-import re
 import subprocess, shutil
 from pathlib import Path
 from packaging.version import Version
-from git_version_sync.models import BumpType
 from git_version_sync.utils import get_config_path
 
 def commit_config_change(new_version: Version) -> None:
@@ -210,11 +208,22 @@ def is_branch_behind_remote() -> bool:
     except subprocess.CalledProcessError as e:
         raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
 
-def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
+def get_commit_since_tag(
+        base_version: Version|None = None,
+        target_reff: Version|str = "HEAD"
+) -> list:
+    if target_reff != "HEAD":
+        target_reff = f"v{target_reff}" if isinstance(target_reff, Version) else target_reff
+
+    if base_version:
+        git_range = f"v{base_version}..{target_reff}"
+    else:
+        git_range = str(target_reff)
+
     command = [
         "git", "log",
-        f"v{base_version}..HEAD",
-        "--format=%B%n---END_COMMIT---"
+        git_range,
+        "--format=%h%x1f%B%n---END_COMMIT---"
     ]
 
     try:
@@ -225,50 +234,24 @@ def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
             check=True
         )
         raw_logs = result.stdout.strip()
+
+        if not raw_logs:
+            raise RuntimeError(f"No new commit found, Action cancelled.")
+
+        parsed_commits = []
+        raw_commits = [commit.strip() for commit in raw_logs.split("---END_COMMIT---") if commit.strip()]
+
+        for raw_commit in raw_commits:
+            if "\x1f" in raw_commit:
+                commit_hash, msg = raw_commit.split("\x1f", 1)
+                parsed_commits.append({
+                    "hash": commit_hash,
+                    "message": msg
+                })
+
+        return parsed_commits
+
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to detect bump type: {e.stderr.strip()}") from e
-
-    if not raw_logs:
-        raise RuntimeError(f"No new commit found, Action cancelled.")
-
-    commits = raw_logs.split("---END_COMMIT---")
-
-    # Regex String Patterns
-    pat_major = r"(BREAKING[ -]CHANGE:|^\w+(\([\w\.-]+\))?!:)"
-    pat_minor = r"^feat(\([\w\.-]+\))?:"
-    pat_patch = r"^fix(\([\w\.-]+\))?:"
-
-    major_count = 0
-    minor_count = 0
-    patch_count = 0
-
-    for commit in commits:
-        commit_str = commit.strip()
-        if not commit_str:
-            continue
-
-        if re.search(pat_major, commit_str, re.MULTILINE):
-            major_count += 1
-
-        elif re.search(pat_minor, commit_str, re.MULTILINE):
-            minor_count += 1
-
-        elif re.search(pat_patch, commit_str, re.MULTILINE):
-            patch_count += 1
-
-    if major_count > 0:
-        reason = f"Detected {major_count} BREAKING CHANGE commit(s) since v{base_version}"
-        return "major", reason
-
-    if minor_count > 0:
-        reason = f"Detected {minor_count} 'feat' commit(s) since v{base_version}"
-        return "minor", reason
-
-    if patch_count > 0:
-        reason = f"Detected {patch_count} 'fix' commit(s) since v{base_version}"
-        return "patch", reason
-
-    raise RuntimeError(
-        "No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). "
-        "Please specify bump type manually."
-    )
+        if base_version:
+            get_commit_since_tag(None, target_reff)
+        raise RuntimeError(f"Failed to collect git log: {e.stderr.strip()}") from e
