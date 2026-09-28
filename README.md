@@ -1,5 +1,8 @@
 # git-version-sync
 
+   [![PyPI - Version](https://img.shields.io/pypi/v/git-version-sync)](https://pypi.org/project/git-version-sync/)
+   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A command-line tool to synchronize semantic versions between Git tags and project configuration files.
 
 **Links:** [Repository](https://github.com/Finsa-SC/git-version-sync) · [PyPI](https://pypi.org/project/git-version-sync/) · [Issues](https://github.com/Finsa-SC/git-version-sync/issues)
@@ -11,9 +14,10 @@ A command-line tool to synchronize semantic versions between Git tags and projec
 - **Bump** versions following semantic versioning (major, minor, patch, auto)
 - **Push** commits and tags to remote repository
 - **Undo** version bumps with optional remote cleanup
-- **Auto-detect** configuration files (pyproject.toml, package.json, Cargo.toml)
+- **Auto-detect** configuration files (pyproject.toml, package.json, Cargo.toml, and more)
 - **GitHub Release** integration for automated release creation
 - **Dry-run mode** to preview changes before execution
+- **Flexible config flag** - specify config file anywhere in command
 - **Custom annotations** for Git tags
 - **Force mode** for bypassing version mismatches
 
@@ -45,14 +49,26 @@ pip install -e .
 
 ## Supported Configuration Files
 
-The tool automatically detects and supports:
-- `pyproject.toml` (Python projects)
-- `package.json` (Node.js projects)
-- `Cargo.toml` (Rust projects)
+The tool automatically detects and supports multiple configuration file formats:
 
-Detection happens in that order. The first file found will be used.
+| Format | File Names | Projects |
+|--------|-----------|----------|
+| TOML | `pyproject.toml`, `Cargo.toml` | Python, Rust |
+| JSON | `package.json` | Node.js, JavaScript |
+| YAML | `*.yaml`, `*.yml` | DevOps, Multi-purpose |
+| INI/CFG | `setup.cfg`, `*.cfg`, `*.ini` | Python (legacy) |
+| XML | `*.xml` | Java, Enterprise |
+
+**Auto-detection order:** pyproject.toml → package.json → Cargo.toml → *.yaml → setup.cfg → *.xml
+
+The first file found will be used. You can also specify a custom config file with the `--config` flag.
 
 ## Usage
+
+### Global Options
+
+- `-c, --config PATH` - Path to a custom configuration file (works anywhere in the command)
+- `-v, --version` - Display version information
 
 ### Check Command
 
@@ -60,6 +76,8 @@ Verify version consistency between Git tags and project configuration:
 
 ```bash
 git-version-sync check
+git-version-sync --config package.json check
+git-version-sync check --config package.json
 ```
 
 **Options:**
@@ -82,11 +100,16 @@ git-version-sync sync
 Increment the version in configuration file and create a corresponding Git tag:
 
 ```bash
-git-version-sync bump {major|minor|patch|auto}
+git-version-sync bump [major|minor|patch|auto]
 ```
 
 **Arguments:**
-- `part` - Version part to increment (major, minor, patch, auto). Default: auto (determines automatically)
+- `part` - Version part to increment (major, minor, patch, auto). Optional - runs interactive mode if omitted.
+
+**Modes:**
+- **Interactive** (no argument) - Suggests bump type based on commit analysis and asks for confirmation
+- **Auto** - Automatically detects version bump without confirmation
+- **Manual** (major/minor/patch) - Explicitly specify version bump
 
 **Options:**
 - `-f, --force` - Force bump even if version mismatch occurs
@@ -130,39 +153,54 @@ git-version-sync undo
 ### Check current version status
 ```bash
 $ git-version-sync check
-Version is synchronized with highest local tag (v1.10.0)
+Version is synchronized with highest local tag (v1.12.0)
 ```
 
 ### Check without fetching from remote
 ```bash
 $ git-version-sync check --no-fetch
-Version is synchronized with highest local tag (v1.10.0)
+Version is synchronized with highest local tag (v1.12.0)
 ```
 
-### Bump patch version
+### Check with custom config file (flexible positioning)
 ```bash
-$ git-version-sync bump patch
-Success bump version to v1.10.1
+$ git-version-sync --config package.json check
+$ git-version-sync check --config package.json
 ```
 
-### Bump with auto-detection (default)
+### Bump with interactive mode (no argument)
 ```bash
 $ git-version-sync bump
-Success bump version to v1.10.1
+Detected feature addition in recent commits
+Suggested bump: minor (v1.12.0 -> v1.13.0)
+Apply this version bump? [Y/n]: y
+Success bump version to v1.13.0
+```
+
+### Bump with auto-detection
+```bash
+$ git-version-sync bump auto
+Success bump version to v1.13.0
+```
+
+### Bump patch version explicitly
+```bash
+$ git-version-sync bump patch
+Success bump version to v1.12.1
 ```
 
 ### Bump minor version with custom message
 ```bash
 $ git-version-sync bump minor -m "Add new features"
-Success bump version to v1.11.0
+Success bump version to v1.13.0
 ```
 
 ### Bump patch version with push and GitHub release
 ```bash
 $ git-version-sync bump patch -p -r "Bug fixes and improvements"
-Success bump version to v1.10.1
+Success bump version to v1.12.1
 Pushing commit and tag to remote...
-Created GitHub Release v1.10.1
+Created GitHub Release v1.12.1
 ```
 
 ### Bump major version as draft release
@@ -176,12 +214,12 @@ Created GitHub Release v2.0.0 (draft)
 ### Dry-run preview before bumping
 ```bash
 $ git-version-sync bump minor -m "Release" -p --dry-run
-Updated project config to v1.11.0 (DRY RUN)
-Committed changes: 'bump version to v1.11.0' (DRY RUN)
-Created Git tag v1.11.0 (DRY RUN)
+Updated project config to v1.13.0 (DRY RUN)
+Committed changes: 'bump version to v1.13.0' (DRY RUN)
+Created Git tag v1.13.0 (DRY RUN)
 Pushed commit and tag to remote (DRY RUN)
 
-Success bump version to v1.11.0 (DRY RUN - no changes made)
+Success bump version to v1.13.0 (DRY RUN - no changes made)
 ```
 
 ### Push to remote
@@ -192,7 +230,7 @@ Pushing branch and tags to remote...
 
 ### Push specific tags
 ```bash
-$ git-version-sync push v1.10.0 v1.10.1
+$ git-version-sync push v1.12.0 v1.12.1
 Pushing specified tags to remote...
 ```
 
@@ -205,20 +243,20 @@ Pushing all local tags to remote...
 ### Undo latest version bump
 ```bash
 $ git-version-sync undo
-Are you sure you want to undo v1.10.1? (y/n): y
+Are you sure you want to undo v1.12.1? (y/n): y
 Successfully undone version bump
 ```
 
 ### Undo specific version and delete from remote
 ```bash
-$ git-version-sync undo v1.10.1 -r -f
-Successfully undone v1.10.1 and deleted from remote
+$ git-version-sync undo v1.12.1 -r -f
+Successfully undone v1.12.1 and deleted from remote
 ```
 
 ### Display version
 ```bash
 $ git-version-sync --version
-git-version-sync 1.10.0
+git-version-sync 1.12.0
 ```
 
 ## Dependencies
