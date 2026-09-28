@@ -62,5 +62,5 @@ def do_push(tags: list[str], push_all: bool=False, release: str|None=None):
                 commits = get_commit_since_tag(prev_tag, target_version)
                 change_log = generate_changelog(commits)
 
-            print(f"Created GitHub Release v{target_version}")
+            print(f"Created GitHub Release for v{target_version}")
             create_github_release(target_version, change_log)

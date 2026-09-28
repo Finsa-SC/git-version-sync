@@ -212,6 +212,9 @@ def get_commit_since_tag(
         base_version: Version|None = None,
         target_reff: Version|str = "HEAD"
 ) -> list:
+    if target_reff != "HEAD":
+        target_reff = f"v{target_reff}" if isinstance(target_reff, Version) else target_reff
+
     if base_version:
         git_range = f"v{base_version}..{target_reff}"
     else:
