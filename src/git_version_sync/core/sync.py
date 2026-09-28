@@ -40,9 +40,7 @@ def do_sync(to_git: bool=False, to_config: bool=False, config_name: Path|None=No
         else:
             target_version = config_tag
 
-        print(f"target: {target_version}")
         if highest_local_tag and highest_local_tag > config_tag:
-            print("Bump config")
             bump_config_version(target_version, config_name)
         else:
             bump_git_tag(target_version)
