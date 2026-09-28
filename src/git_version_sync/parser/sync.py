@@ -1,7 +1,8 @@
-def sync_subparse(subparsers):
+def sync_subparse(subparsers, parent_parser):
     sync_parser = subparsers.add_parser(
         "sync",
-        help="Sync version discrepancies between project configuration version and Git tags"
+        help="Sync version discrepancies between project configuration version and Git tags",
+        parents=[parent_parser] if parent_parser else []
     )
     sync_group = sync_parser.add_mutually_exclusive_group()
     sync_group.add_argument(

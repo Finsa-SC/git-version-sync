@@ -1,7 +1,8 @@
-def bump_subparse(subparsers):
+def bump_subparse(subparsers, parent_parser):
     bump_parser = subparsers.add_parser(
         "bump",
-        help="Increment project version in configuration file and create a corresponding Git tag"
+        help="Increment project version in configuration file and create a corresponding Git tag",
+        parents=[parent_parser] if parent_parser else []
     )
     bump_parser.add_argument(
         "part",
