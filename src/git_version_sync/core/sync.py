@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from .bump import bump_config_version, bump_git_tag
-from .check import get_config_tag, get_local_tags, parse_highest_verion
+from .check import get_config_tag, get_local_tags, parse_highest_version
 from .git import fetch_remote_tags, is_branch_behind_remote
 from ..networks import check_network
 
@@ -13,7 +13,7 @@ def do_sync(to_git: bool=False, to_config: bool=False, config_name: Path|None=No
     config_tag = get_config_tag(config_name)
     local_tags = get_local_tags()
 
-    highest_local_tag = parse_highest_verion(local_tags)
+    highest_local_tag = parse_highest_version(local_tags)
     if config_tag == highest_local_tag:
         return f"Already in sync at (v{config_tag})"
 

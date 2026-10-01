@@ -1,6 +1,8 @@
 import subprocess, shutil
 from pathlib import Path
 from packaging.version import Version
+
+from git_version_sync.exception import GitCommandError, GitPushError
 from git_version_sync.utils import get_config_path
 
 def commit_config_change(new_version: Version) -> None:
@@ -23,7 +25,9 @@ def commit_config_change(new_version: Version) -> None:
         output = (e.stdout or "") + (e.stderr or "")
         if "nothing to commit" in output:
             return
-        raise RuntimeError(f"Git commit failed: \n{e.stderr.strip()}") from e
+
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Git commit failed: \n{error_msg}") from e
 
 def push_to_remote(new_version: list[Version]|Version) -> None:
     try:
@@ -45,7 +49,8 @@ def push_to_remote(new_version: list[Version]|Version) -> None:
             check=True
         )
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to push to remote: \n{e.stderr.strip()}") from e
+        error_msg = clean_git_error(e)
+        raise GitPushError(f"Failed to push to remote: \n{error_msg}") from e
 
 def fetch_remote_tags():
     command = ['git', 'fetch', '--tags', 'origin']
@@ -58,14 +63,15 @@ def fetch_remote_tags():
             check=True
         )
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to fetch tags from remote: {e.stderr.strip()}") from e
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to fetch tags from remote: {error_msg}") from e
 
 def create_github_release(version: Version, message: str|None=None, draft: bool=False) -> None:
     tag_name = f"v{version}"
     command = ['gh', 'release', 'create', tag_name, '--generate-notes']
 
     if not shutil.which('gh'):
-        raise RuntimeError("Github CLI ('gh') not installed yet, please install 'gh' first.")
+        raise GitCommandError("Github CLI ('gh') not installed yet, please install 'gh' first.")
 
     if message and message.strip():
         command.extend(['--notes', message])
@@ -81,7 +87,8 @@ def create_github_release(version: Version, message: str|None=None, draft: bool=
             check=True
         )
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to create release tag: \n{e.stderr.strip()}") from e
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to create release tag: \n{error_msg}") from e
 
 def delete_tag(version: Version) -> None:
     command = ['git', 'tag', '-d', f"v{version}"]
@@ -95,7 +102,8 @@ def delete_tag(version: Version) -> None:
         )
 
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
 def delete_remote_tag(version: Version) -> None:
     command = ['git', 'push', 'origin', '--delete', f"v{version}"]
@@ -109,7 +117,8 @@ def delete_remote_tag(version: Version) -> None:
         )
 
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
 def get_tag_commit(tag_name: str) -> str | None:
     command = ["git", "rev-parse", f"{tag_name}^{{commit}}"]
@@ -143,7 +152,8 @@ def reset_soft_head() -> None:
             command, check=True
         )
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to soft reset head: {e.stderr.strip()}") from e
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to soft reset head: {error_msg}") from e
 
 def get_git_path() -> Path:
     command = ["git", "rev-parse", "--show-toplevel"]
@@ -159,9 +169,9 @@ def get_git_path() -> Path:
         err_msg = (e.stderr or "").strip()
 
         if "not a git" in err_msg:
-            raise RuntimeError(f"Not a Git repository (or any of the parent directories).") from e
+            raise GitCommandError(f"Not a Git repository (or any of the parent directories).") from e
         else:
-            raise RuntimeError(f"Failed to get git path: {err_msg}") from e
+            raise GitCommandError(f"Failed to get git path: {err_msg}") from e
 
     return Path(result.stdout.strip())
 
@@ -206,7 +216,8 @@ def is_branch_behind_remote() -> bool:
         return int(result.stdout.strip() or 0) > 0
 
     except subprocess.CalledProcessError as e:
-        raise RuntimeError(f"Failed to check branch status: {e.stderr.strip()}") from e
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
 def get_commit_since_tag(
         base_version: Version|None = None,
@@ -236,7 +247,7 @@ def get_commit_since_tag(
         raw_logs = result.stdout.strip()
 
         if not raw_logs:
-            raise RuntimeError(f"No new commit found, Action cancelled.")
+            raise GitCommandError(f"No new commit found, Action cancelled.")
 
         parsed_commits = []
         raw_commits = [commit.strip() for commit in raw_logs.split("---END_COMMIT---") if commit.strip()]
@@ -254,4 +265,28 @@ def get_commit_since_tag(
     except subprocess.CalledProcessError as e:
         if base_version:
             get_commit_since_tag(None, target_reff)
-        raise RuntimeError(f"Failed to collect git log: {e.stderr.strip()}") from e
+
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
+
+def clean_git_error(e: subprocess.CalledProcessError) -> str:
+    raw_error = e.stderr or e.stdout or str(e)
+    lines = raw_error.splitlines()
+
+    ingore_tupple = (
+        "remote: error",
+        "remote: -",
+        "[remote rejected]",
+    )
+
+    cleand_lines = []
+    for line in lines:
+        line_str = line.strip()
+        for ignore in ingore_tupple:
+            if ignore in line_str:
+                cleand_lines.append(line_str)
+
+    if cleand_lines:
+        return "\n".join(cleand_lines)
+
+    return raw_error.strip()

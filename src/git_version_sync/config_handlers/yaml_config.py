@@ -10,10 +10,24 @@ class YamlConfigParser(BaseConfigParser):
         super().__init__(config_path)
         self._data = self._load_yaml()
         self.possible_keys = [
-            ("git-version-sync", "version"),  # Tool scope: git-version-sync.version
-            ("tool", "git-version-sync", "version"),  # Standard CLI scope
-            ("package", "version"),  # Package scope
+            # Tool & Project Scopes
+            ("git-version-sync", "version"),
+            ("tool", "git-version-sync", "version"),
+            ("package", "version"),
             ("project", "version"),
+            ("app", "version"),
+
+            # OpenAPI / Swagger Specs
+            ("info", "version"),
+
+            # Helm Charts
+            ("chart", "version"),
+
+            # Metadata Scopes
+            ("metadata", "version"),
+
+            # Root level version
+            ("version",),
         ]
 
     def _load_yaml(self) -> dict[str, Any]:

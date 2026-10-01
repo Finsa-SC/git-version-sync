@@ -3,10 +3,12 @@ from pathlib import Path
 
 from packaging.version import Version
 
+from .undo import do_undo
 from .changelog import generate_changelog
-from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag
-from .check import parse_highest_verion, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
+from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error
+from .check import parse_highest_version, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..config_handlers import get_config_parser
+from ..exception import GitCommandError
 from ..models import BumpRequest, BumpType
 from ..networks import check_network
 from ..utils import get_config_path
@@ -38,30 +40,48 @@ def bump_version(
         base_version: Version,
         new_version: Version,
         config_path: Path
-) -> None:
-    bump_config_version(new_version, config_path)
-    print(f"Updated {config_path.name} to v{new_version}")
+) -> bool:
+    mutated_local = False
 
-    commit_config_change(new_version)
-    print(f"Committed changes: 'bump version to v{new_version}'")
+    try:
+        bump_config_version(new_version, config_path)
+        print(f"Updated {config_path.name} to v{new_version}")
 
-    bump_git_tag(new_version, request.tag_message)
-    print(f"Created Git tag v{new_version}")
+        commit_config_change(new_version)
+        print(f"Committed changes: 'bump version to v{new_version}'")
 
-    if request.push:
-        push_to_remote(new_version)
-        print("Pushed commit and tag to remote")
+        bump_git_tag(new_version, request.tag_message)
+        print(f"Created Git tag v{new_version}")
 
-    if request.release is not None:
-        if request.release.strip():
-            change_log = request.release
-        else:
-            commits = get_commit_since_tag(base_version)
-            change_log = generate_changelog(commits)
+        mutated_local = True
 
-        create_github_release(new_version, change_log, request.draft)
-        draft_str = " (Draft)" if request.draft else ""
-        print(f"Created GitHub Release v{new_version}{draft_str}")
+        if request.push:
+            push_to_remote(new_version)
+            print("Pushed commit and tag to remote")
+
+        if request.release is not None:
+            if request.release.strip():
+                change_log = request.release
+            else:
+                commits = get_commit_since_tag(base_version)
+                change_log = generate_changelog(commits)
+
+            create_github_release(new_version, change_log, request.draft)
+            draft_str = " (Draft)" if request.draft else ""
+            print(f"Created GitHub Release v{new_version}{draft_str}")
+
+    except Exception as e:
+        error_msg = clean_git_error(str(e))
+        print(f"\n[!] Error during bump execution: {error_msg}")
+        if mutated_local:
+            handle_push_error(f"v{new_version}", config_path)
+        return False
+    else:
+        return True
+
+def handle_push_error(tag_name: str, config_path):
+    print(f"[!] Local repository was modified with tag '{tag_name}'.")
+    do_undo(tag_name, remote=True, config_name=config_path)
 
 def format_dry_run_output(request: BumpRequest, new_version: Version, config_path: Path) -> str:
     output: list[str] = [
@@ -149,11 +169,11 @@ def do_bump(request: BumpRequest):
     remote_tags = get_remote_tags()
 
     config_tag = get_config_tag()
-    highest_local_tag = parse_highest_verion(local_tags)
-    highest_overall_tag = parse_highest_verion(local_tags | remote_tags)
+    highest_local_tag = parse_highest_version(local_tags)
+    highest_overall_tag = parse_highest_version(local_tags | remote_tags)
 
     if config_tag != highest_local_tag and not request.force:
-        raise RuntimeError(
+        raise GitCommandError(
             f"Version mismatch detected!\n"
             f"  Config: v{config_tag}\n"
             f"  Git   : v{highest_local_tag}\n"
@@ -163,7 +183,7 @@ def do_bump(request: BumpRequest):
     missing_in_local = get_missing_local_tags(remote_tags, local_tags)
     if missing_in_local and not request.force:
         missing_str = ", ".join(f"{ver}" for ver in missing_in_local)
-        raise RuntimeError(
+        raise GitCommandError(
             f"Remote repository has newer tag(s) missing locally: {missing_str}\n"
             f"Run `git-version-sync sync` first or use `--force` to bump from the highest remote tag."
         )
@@ -206,11 +226,11 @@ def do_bump(request: BumpRequest):
             config_path
         )
 
-    bump_version(
+    bump_status = bump_version(
         request,
         base_version,
         new_version,
         config_path
     )
 
-    return f"\nSuccess bump version to v{new_version}"
+    return f"\nSuccess bump version to v{new_version}" if bump_status else "\nFailed to bump version"
