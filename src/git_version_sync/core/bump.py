@@ -3,12 +3,12 @@ from pathlib import Path
 
 from packaging.version import Version
 
-from . import do_undo
+from .undo import do_undo
 from .changelog import generate_changelog
 from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag
 from .check import parse_highest_version, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..config_handlers import get_config_parser
-from ..exception import GitCommandError, GitPushError
+from ..exception import GitCommandError
 from ..models import BumpRequest, BumpType
 from ..networks import check_network
 from ..utils import get_config_path
