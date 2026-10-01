@@ -11,7 +11,7 @@ from ..config_handlers import get_config_parser
 from ..exception import GitCommandError
 from ..models import BumpRequest, BumpType
 from ..networks import check_network
-from ..utils import get_config_path
+from ..utils import get_list_config_path
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
@@ -30,10 +30,11 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     )
 
 def bump_config_version(new_version: Version, config_name: Path|None=None) -> None:
-    config_path = get_config_path(config_name)
+    config_list = get_list_config_path(config_name)
 
-    config_parser = get_config_parser(config_path)
-    config_parser.update_version(new_version)
+    for config_path in config_list:
+        config_parser = get_config_parser(config_path)
+        config_parser.update_version(new_version)
 
 def bump_version(
         request: BumpRequest,
@@ -163,7 +164,7 @@ def do_bump(request: BumpRequest):
     if request.push:
         check_network()
 
-    config_path = get_config_path(request.config_path)
+    config_path = get_list_config_path(request.config_path)
 
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
