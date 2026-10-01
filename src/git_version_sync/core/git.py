@@ -3,18 +3,23 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.exception import GitCommandError, GitPushError
-from git_version_sync.utils import get_config_path
+from git_version_sync.utils import get_list_config_path
 
-def commit_config_change(new_version: Version) -> None:
+def commit_config_change(new_version: Version, config_path: Path) -> None:
+    config_paths = [str(config) for config in get_list_config_path(config_path)]
+
+    if not config_path:
+        return
+
     subprocess.run([
-        'git', 'add', str(get_config_path())],
+        'git', 'add', *config_paths],
         capture_output=True,
         text=True,
         check=True
     )
 
     try:
-        commit_msg = f"chore({get_config_path().name}): bump version to v{new_version}"
+        commit_msg = f"chore(version): bump version to v{new_version}"
         subprocess.run(
             ['git', 'commit', '-m', commit_msg],
             capture_output=True,
