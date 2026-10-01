@@ -1,7 +1,7 @@
 # git-version-sync
 
-   [![PyPI - Version](https://img.shields.io/pypi/v/git-version-sync)](https://pypi.org/project/git-version-sync/)
-   [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![PyPI - Version](https://img.shields.io/pypi/v/git-version-sync)](https://pypi.org/project/git-version-sync/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A command-line tool to synchronize semantic versions between Git tags and project configuration files.
 
@@ -12,9 +12,10 @@ A command-line tool to synchronize semantic versions between Git tags and projec
 - **Check** version status and consistency between Git tags and project configuration
 - **Sync** version discrepancies with flexible sync directions
 - **Bump** versions following semantic versioning (major, minor, patch, auto)
-- **Push** commits and tags to remote repository
-- **Undo** version bumps with optional remote cleanup
+- **Push** commits and tags to remote repository with optional GitHub releases
+- **Undo** version bumps with optional remote cleanup and automatic rollback on error
 - **Auto-detect** configuration files (pyproject.toml, package.json, Cargo.toml, and more)
+- **Auto-generate changelog** from commit history for each version bump
 - **GitHub Release** integration for automated release creation
 - **Dry-run mode** to preview changes before execution
 - **Flexible config flag** - specify config file anywhere in command
@@ -54,12 +55,12 @@ The tool automatically detects and supports multiple configuration file formats:
 | Format | File Names | Projects |
 |--------|-----------|----------|
 | TOML | `pyproject.toml`, `Cargo.toml` | Python, Rust |
-| JSON | `package.json` | Node.js, JavaScript |
-| YAML | `*.yaml`, `*.yml` | DevOps, Multi-purpose |
+| JSON | `package.json`, `composer.json` | Node.js, PHP |
+| YAML | `pubspec.yaml`, `docker-compose.yaml` | Dart, Docker |
 | INI/CFG | `setup.cfg`, `*.cfg`, `*.ini` | Python (legacy) |
-| XML | `*.xml` | Java, Enterprise |
+| XML | `pom.xml`, `*.xml`, `*.xaml` | Java, .NET |
 
-**Auto-detection order:** pyproject.toml → package.json → Cargo.toml → *.yaml → setup.cfg → *.xml
+**Auto-detection order:** pyproject.toml → Cargo.toml → package.json → setup.cfg → pubspec.yaml → pom.xml → composer.json → docker-compose.yaml
 
 The first file found will be used. You can also specify a custom config file with the `--config` flag.
 
@@ -115,9 +116,11 @@ git-version-sync bump [major|minor|patch|auto]
 - `-f, --force` - Force bump even if version mismatch occurs
 - `-p, --push` - Automatically push commit and tag to remote
 - `-m, --message MESSAGE` - Custom annotation message for the Git tag
-- `-r, --release [NOTES]` - Create a GitHub release for the bumped version (requires 'gh' CLI)
+- `-r, --release [NOTES]` - Create a GitHub release with auto-generated changelog (requires 'gh' CLI)
 - `-d, --draft` - Save the GitHub release as a draft (requires `--release`)
 - `-n, --dry-run` - Perform a dry run without making any actual changes
+
+**Note:** Changelog is auto-generated from commit history between the last version and current HEAD.
 
 ### Push Command
 
@@ -132,6 +135,7 @@ git-version-sync push
 
 **Options:**
 - `-a, --all` - Push all local tags to remote
+- `-r, --release [NOTES]` - Create GitHub releases for the pushed tag(s) (requires 'gh' CLI)
 
 ### Undo Command
 
@@ -153,13 +157,13 @@ git-version-sync undo
 ### Check current version status
 ```bash
 $ git-version-sync check
-Version is synchronized with highest local tag (v1.12.0)
+Version is synchronized with highest local tag (v1.13.0)
 ```
 
 ### Check without fetching from remote
 ```bash
 $ git-version-sync check --no-fetch
-Version is synchronized with highest local tag (v1.12.0)
+Version is synchronized with highest local tag (v1.13.0)
 ```
 
 ### Check with custom config file (flexible positioning)
@@ -172,35 +176,36 @@ $ git-version-sync check --config package.json
 ```bash
 $ git-version-sync bump
 Detected feature addition in recent commits
-Suggested bump: minor (v1.12.0 -> v1.13.0)
+Suggested bump: minor (v1.13.0 -> v1.14.0)
 Apply this version bump? [Y/n]: y
-Success bump version to v1.13.0
+Success bump version to v1.14.0
 ```
 
 ### Bump with auto-detection
 ```bash
 $ git-version-sync bump auto
-Success bump version to v1.13.0
+Success bump version to v1.14.0
 ```
 
 ### Bump patch version explicitly
 ```bash
 $ git-version-sync bump patch
-Success bump version to v1.12.1
+Success bump version to v1.13.1
 ```
 
-### Bump minor version with custom message
+### Bump minor version with custom message and release
 ```bash
-$ git-version-sync bump minor -m "Add new features"
-Success bump version to v1.13.0
+$ git-version-sync bump minor -m "Add new features" -r
+Success bump version to v1.14.0
+Creating GitHub Release v1.14.0 with changelog...
 ```
 
 ### Bump patch version with push and GitHub release
 ```bash
 $ git-version-sync bump patch -p -r "Bug fixes and improvements"
-Success bump version to v1.12.1
+Success bump version to v1.13.1
 Pushing commit and tag to remote...
-Created GitHub Release v1.12.1
+Created GitHub Release v1.13.1 with changelog
 ```
 
 ### Bump major version as draft release
@@ -208,18 +213,18 @@ Created GitHub Release v1.12.1
 $ git-version-sync bump major -p -r -d
 Success bump version to v2.0.0
 Pushing commit and tag to remote...
-Created GitHub Release v2.0.0 (draft)
+Created GitHub Release v2.0.0 (draft) with changelog
 ```
 
 ### Dry-run preview before bumping
 ```bash
 $ git-version-sync bump minor -m "Release" -p --dry-run
-Updated project config to v1.13.0 (DRY RUN)
-Committed changes: 'bump version to v1.13.0' (DRY RUN)
-Created Git tag v1.13.0 (DRY RUN)
+Updated project config to v1.14.0 (DRY RUN)
+Committed changes: 'bump version to v1.14.0' (DRY RUN)
+Created Git tag v1.14.0 (DRY RUN)
 Pushed commit and tag to remote (DRY RUN)
 
-Success bump version to v1.13.0 (DRY RUN - no changes made)
+Success bump version to v1.14.0 (DRY RUN - no changes made)
 ```
 
 ### Push to remote
@@ -228,10 +233,19 @@ $ git-version-sync push
 Pushing branch and tags to remote...
 ```
 
-### Push specific tags
+### Push with GitHub release
 ```bash
-$ git-version-sync push v1.12.0 v1.12.1
+$ git-version-sync push -r
+Pushing branch and tags to remote...
+Creating GitHub Release v1.13.0 with changelog...
+```
+
+### Push specific tags with release
+```bash
+$ git-version-sync push v1.13.0 v1.13.1 -r
 Pushing specified tags to remote...
+Creating GitHub Release v1.13.0 with changelog...
+Creating GitHub Release v1.13.1 with changelog...
 ```
 
 ### Push all local tags
@@ -243,21 +257,32 @@ Pushing all local tags to remote...
 ### Undo latest version bump
 ```bash
 $ git-version-sync undo
-Are you sure you want to undo v1.12.1? (y/n): y
+Are you sure you want to undo v1.13.1? (y/n): y
 Successfully undone version bump
 ```
 
 ### Undo specific version and delete from remote
 ```bash
-$ git-version-sync undo v1.12.1 -r -f
-Successfully undone v1.12.1 and deleted from remote
+$ git-version-sync undo v1.13.1 -r -f
+Successfully undone v1.13.1 and deleted from remote
 ```
 
 ### Display version
 ```bash
 $ git-version-sync --version
-git-version-sync 1.12.0
+git-version-sync 1.13.0
 ```
+
+## How It Works
+
+### Auto-detect Version Bump
+When running `bump` without specifying major/minor/patch, the tool analyzes commit history to suggest the appropriate version increment based on conventional commits.
+
+### Auto-generate Changelog
+Changelog is automatically generated from commits between the last version tag and HEAD when creating a release. Commit messages are formatted for readability in GitHub releases.
+
+### Rollback on Error
+If an error occurs during version bumping (especially when pushing to remote), the tool automatically rolls back changes to prevent inconsistent state between config and git tags.
 
 ## Dependencies
 
