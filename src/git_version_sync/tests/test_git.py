@@ -151,7 +151,8 @@ class TestConfigParsers:
 
     def test_yaml_parser_read_and_update(self, tmp_path):
         yaml_file = tmp_path / "config.yaml"
-        yaml_file.write_text("version: '1.0.0'\n")
+        # Gunakan struktur nested project.version agar sesuai dengan YamlConfigParser
+        yaml_file.write_text("project:\n  version: '1.0.0'\n")
 
         parser = get_config_parser(yaml_file)
         assert isinstance(parser, YamlConfigParser)
