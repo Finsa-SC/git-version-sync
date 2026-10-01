@@ -24,6 +24,9 @@ from git_version_sync.core.git import (
     reset_soft_head,
 )
 
+# Custom exceptions
+from git_version_sync.exception import GitCommandError, GitPushError
+
 # Target modul config_handler & utils
 from git_version_sync.config_handlers import (
     get_config_parser,
@@ -82,12 +85,12 @@ class TestGetGitPath:
         assert result.resolve() == Path(temp_git_repo).resolve()
 
     def test_get_git_path_not_a_git_repo(self):
-        """Harus melempar RuntimeError ketika berada di luar git repository."""
+        """Harus melempar GitCommandError ketika berada di luar git repository."""
         with tempfile.TemporaryDirectory() as tmpdir:
             original_cwd = os.getcwd()
             os.chdir(tmpdir)
             try:
-                with pytest.raises(RuntimeError, match="Not a Git repository"):
+                with pytest.raises(GitCommandError, match="Not a Git repository"):
                     get_git_path()
             finally:
                 os.chdir(original_cwd)
@@ -151,7 +154,6 @@ class TestConfigParsers:
 
     def test_yaml_parser_read_and_update(self, tmp_path):
         yaml_file = tmp_path / "config.yaml"
-        # Gunakan struktur nested project.version agar sesuai dengan YamlConfigParser
         yaml_file.write_text("project:\n  version: '1.0.0'\n")
 
         parser = get_config_parser(yaml_file)
@@ -261,8 +263,8 @@ class TestDeleteTag:
         assert "v1.0.0" not in result.stdout
 
     def test_delete_tag_nonexistent(self, temp_git_repo):
-        """Harus melempar RuntimeError saat menghapus tag yang tidak ada."""
-        with pytest.raises(RuntimeError):
+        """Harus melempar GitCommandError saat menghapus tag yang tidak ada."""
+        with pytest.raises(GitCommandError):
             delete_tag(Version("99.0.0"))
 
 
@@ -285,11 +287,11 @@ class TestDeleteRemoteTag:
 
     @patch("subprocess.run")
     def test_delete_remote_tag_failure(self, mock_run):
-        """Harus melempar RuntimeError jika penghapusan tag remote gagal."""
+        """Harus melempar GitCommandError jika penghapusan tag remote gagal."""
         mock_run.side_effect = subprocess.CalledProcessError(
             1, "git push", stderr="remote ref does not exist"
         )
-        with pytest.raises(RuntimeError):
+        with pytest.raises(GitCommandError):
             delete_remote_tag(Version("99.0.0"))
 
 
@@ -441,12 +443,12 @@ class TestPushToRemote:
 
     @patch("subprocess.run")
     def test_push_to_remote_failure(self, mock_run):
-        """Harus melempar RuntimeError jika git push gagal."""
+        """Harus melempar GitPushError jika git push gagal."""
         mock_run.side_effect = subprocess.CalledProcessError(
             1, "git push", stderr="Permission denied"
         )
 
-        with pytest.raises(RuntimeError, match="Failed to push to remote"):
+        with pytest.raises(GitPushError, match="Failed to push to remote"):
             push_to_remote(Version("1.0.0"))
 
 
@@ -467,12 +469,12 @@ class TestFetchRemoteTags:
 
     @patch("subprocess.run")
     def test_fetch_remote_tags_failure(self, mock_run):
-        """Harus melempar RuntimeError jika fetch gagal."""
+        """Harus melempar GitCommandError jika fetch gagal."""
         mock_run.side_effect = subprocess.CalledProcessError(
             1, "git fetch", stderr="Network error"
         )
 
-        with pytest.raises(RuntimeError, match="Failed to fetch tags from remote"):
+        with pytest.raises(GitCommandError, match="Failed to fetch tags from remote"):
             fetch_remote_tags()
 
 
@@ -497,10 +499,10 @@ class TestCreateGithubRelease:
 
     @patch("shutil.which")
     def test_create_github_release_gh_not_installed(self, mock_which):
-        """Harus melempar RuntimeError jika gh CLI belum terpasang."""
+        """Harus melempar GitCommandError jika gh CLI belum terpasang."""
         mock_which.return_value = None
 
-        with pytest.raises(RuntimeError, match="Github CLI"):
+        with pytest.raises(GitCommandError, match="Github CLI"):
             create_github_release(Version("1.0.0"))
 
     @patch("shutil.which")
@@ -549,11 +551,11 @@ class TestIsBranchBehindRemote:
 
     @patch("subprocess.run")
     def test_branch_behind_check_failure(self, mock_run):
-        """Harus melempar RuntimeError jika pemeriksaan rev-list gagal."""
+        """Harus melempar GitCommandError jika pemeriksaan rev-list gagal."""
         mock_run.side_effect = subprocess.CalledProcessError(
             1, "git rev-list", stderr="No upstream configured"
         )
-        with pytest.raises(RuntimeError, match="Failed to check branch status"):
+        with pytest.raises(GitCommandError, match="Failed to check branch status"):
             is_branch_behind_remote()
 
 
