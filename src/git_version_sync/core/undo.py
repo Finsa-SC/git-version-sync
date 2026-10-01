@@ -3,7 +3,7 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.core.bump import bump_config_version
-from git_version_sync.core.check import get_local_tags, parse_highest_verion
+from git_version_sync.core.check import get_local_tags, parse_highest_version
 from git_version_sync.core.git import (
     delete_tag,
     delete_remote_tag,
@@ -26,7 +26,7 @@ def get_previous_version(version_list: set[str]) -> Version|None:
 
 def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name: Path|None=None) -> None:
     local_tags = get_local_tags()
-    latest_tag = parse_highest_verion(local_tags)
+    latest_tag = parse_highest_version(local_tags)
 
     if latest_tag is None:
         raise RuntimeError("No local tag found.")

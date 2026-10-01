@@ -1,7 +1,7 @@
 from packaging.version import Version
 
 from .changelog import generate_changelog
-from .check import get_local_tags, get_remote_tags, parse_highest_verion
+from .check import get_local_tags, get_remote_tags, parse_highest_version
 from .git import push_to_remote, fetch_remote_tags, get_commit_since_tag, create_github_release
 
 
@@ -27,7 +27,7 @@ def do_push(tags: list[str], push_all: bool=False, release: str|None=None):
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
     unpush_tags = local_tags - remote_tags
-    latest_tags = parse_highest_verion(local_tags)
+    latest_tags = parse_highest_version(local_tags)
 
     tags_to_push: list[Version] = []
 

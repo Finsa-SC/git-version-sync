@@ -21,7 +21,7 @@ def get_local_tags() -> set[str]:
 
     return tags
 
-def parse_highest_verion(tags: set[str]) -> Version|None:
+def parse_highest_version(tags: set[str]) -> Version | None:
     valid_version = []
     for tag in tags:
         try:
@@ -54,7 +54,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
     config_tag = get_config_tag(config_name)
     local_tags = get_local_tags()
 
-    highest_local_version = parse_highest_verion(local_tags)
+    highest_local_version = parse_highest_version(local_tags)
     if highest_local_version is None:
         return "No local tags found."
 
@@ -75,7 +75,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
 
     output = []
 
-    highest_remote = parse_highest_verion(remote_tags)
+    highest_remote = parse_highest_version(remote_tags)
 
     missing_in_local = get_missing_local_tags(remote_tags, local_tags)
     missing_in_remote = get_missing_remote_tags(remote_tags, local_tags)
