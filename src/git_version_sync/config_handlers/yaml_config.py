@@ -10,7 +10,6 @@ class YamlConfigParser(BaseConfigParser):
         super().__init__(config_path)
         self._data = self._load_yaml()
         self.possible_keys = [
-            ("version",),  # Root: version
             ("git-version-sync", "version"),  # Tool scope: git-version-sync.version
             ("tool", "git-version-sync", "version"),  # Standard CLI scope
             ("package", "version"),  # Package scope
