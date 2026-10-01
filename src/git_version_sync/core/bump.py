@@ -5,7 +5,7 @@ from packaging.version import Version
 
 from .undo import do_undo
 from .changelog import generate_changelog
-from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag
+from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error
 from .check import parse_highest_version, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
 from ..config_handlers import get_config_parser
 from ..exception import GitCommandError
@@ -40,7 +40,7 @@ def bump_version(
         base_version: Version,
         new_version: Version,
         config_path: Path
-) -> None:
+) -> bool:
     mutated_local = False
 
     try:
@@ -52,6 +52,8 @@ def bump_version(
 
         bump_git_tag(new_version, request.tag_message)
         print(f"Created Git tag v{new_version}")
+
+        mutated_local = True
 
         if request.push:
             push_to_remote(new_version)
@@ -69,13 +71,15 @@ def bump_version(
             print(f"Created GitHub Release v{new_version}{draft_str}")
 
     except Exception as e:
-        print(f"\n[!] Error during bump execution: {e}")
+        error_msg = clean_git_error(str(e))
+        print(f"\n[!] Error during bump execution: {error_msg}")
         if mutated_local:
-            handle_push_error(f"v{new_version}", e, config_path)
-        raise
+            handle_push_error(f"v{new_version}", config_path)
+        return False
+    else:
+        return True
 
-
-def handle_push_error(tag_name: str, original_error, config_path):
+def handle_push_error(tag_name: str, config_path):
     print(f"[!] Local repository was modified with tag '{tag_name}'.")
     do_undo(tag_name, remote=True, config_name=config_path)
 
@@ -222,11 +226,11 @@ def do_bump(request: BumpRequest):
             config_path
         )
 
-    bump_version(
+    bump_status = bump_version(
         request,
         base_version,
         new_version,
         config_path
     )
 
-    return f"\nSuccess bump version to v{new_version}"
+    return f"\nSuccess bump version to v{new_version}" if bump_status else "\nFailed to bump version"
