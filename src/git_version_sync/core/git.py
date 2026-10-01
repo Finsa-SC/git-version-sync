@@ -26,7 +26,7 @@ def commit_config_change(new_version: Version) -> None:
         if "nothing to commit" in output:
             return
 
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Git commit failed: \n{error_msg}") from e
 
 def push_to_remote(new_version: list[Version]|Version) -> None:
@@ -49,7 +49,7 @@ def push_to_remote(new_version: list[Version]|Version) -> None:
             check=True
         )
     except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitPushError(f"Failed to push to remote: \n{error_msg}") from e
 
 def fetch_remote_tags():
@@ -63,7 +63,7 @@ def fetch_remote_tags():
             check=True
         )
     except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to fetch tags from remote: {error_msg}") from e
 
 def create_github_release(version: Version, message: str|None=None, draft: bool=False) -> None:
@@ -87,7 +87,7 @@ def create_github_release(version: Version, message: str|None=None, draft: bool=
             check=True
         )
     except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to create release tag: \n{error_msg}") from e
 
 def delete_tag(version: Version) -> None:
@@ -102,7 +102,7 @@ def delete_tag(version: Version) -> None:
         )
 
     except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
 def delete_remote_tag(version: Version) -> None:
@@ -117,7 +117,7 @@ def delete_remote_tag(version: Version) -> None:
         )
 
     except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
 def get_tag_commit(tag_name: str) -> str | None:
@@ -152,7 +152,7 @@ def reset_soft_head() -> None:
             command, check=True
         )
     except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to soft reset head: {error_msg}") from e
 
 def get_git_path() -> Path:
@@ -216,7 +216,7 @@ def is_branch_behind_remote() -> bool:
         return int(result.stdout.strip() or 0) > 0
 
     except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
 def get_commit_since_tag(
@@ -266,18 +266,20 @@ def get_commit_since_tag(
         if base_version:
             get_commit_since_tag(None, target_reff)
 
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
 
-def clean_git_error(raw_error: str) -> str:
+def clean_git_error(e: subprocess.CalledProcessError) -> str:
+    raw_error = e.stderr or e.stdout or str(e)
     lines = raw_error.splitlines()
-    cleand_lines = []
+
     ingore_tupple = (
         "remote: error",
         "remote: -",
         "[remote rejected]",
     )
 
+    cleand_lines = []
     for line in lines:
         line_str = line.strip()
         for ignore in ingore_tupple:
