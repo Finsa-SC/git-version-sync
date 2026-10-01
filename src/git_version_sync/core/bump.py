@@ -71,7 +71,7 @@ def bump_version(
             print(f"Created GitHub Release v{new_version}{draft_str}")
 
     except Exception as e:
-        error_msg = clean_git_error(str(e))
+        error_msg = clean_git_error(e)
         print(f"\n[!] Error during bump execution: {error_msg}")
         if mutated_local:
             handle_push_error(f"v{new_version}", config_path)

@@ -1,0 +1,19 @@
+{
+  "name": "git-version-sync",
+  "version": "1.0.0",
+  "description": "[![PyPI - Version](https://img.shields.io/pypi/v/git-version-sync)](https://pypi.org/project/git-version-sync/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Finsa-SC/git-version-sync.git"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Finsa-SC/git-version-sync/issues"
+  },
+  "homepage": "https://github.com/Finsa-SC/git-version-sync#readme"
+}
