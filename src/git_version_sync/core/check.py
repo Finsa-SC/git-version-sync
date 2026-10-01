@@ -5,8 +5,9 @@ from packaging.version import Version
 
 from git_version_sync.config_handlers import get_config_parser
 from git_version_sync.core.git import get_remote_tags, fetch_remote_tags
+from git_version_sync.exception import ConfigVersionMismatch
 from git_version_sync.networks import check_network
-from git_version_sync.utils import get_config_path
+from git_version_sync.utils import get_list_config_path
 
 def get_local_tags() -> set[str]:
     command = ["git", "tag", "--list"]
@@ -33,12 +34,23 @@ def parse_highest_version(tags: set[str]) -> Version | None:
     return max(valid_version) if valid_version else None
 
 def get_config_tag(config_name: Path|None=None) -> Version:
-    config_path = get_config_path(config_name)
+    config_list = get_list_config_path(config_name)
 
-    config_parser = get_config_parser(config_path)
-    config_tag = config_parser.get_version()
+    config_found = {}
+    for config_path in config_list:
+        config_parser = get_config_parser(config_path)
+        config_tag = config_parser.get_version()
 
-    return config_tag
+        if not config_found:
+            config_found = dict(file=config_path.name, version=config_tag)
+        else:
+            if config_found['version'] != config_tag:
+                raise ConfigVersionMismatch(f"Invalid version betwen {config_found['file']}({config_found['version']}) and {config_path.name}({config_tag})")
+
+    if config_found:
+        return config_found['version']
+    else:
+        raise FileNotFoundError("No config file match")
 
 def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
     missing_in_local = remote_tags - local_tags
@@ -112,4 +124,4 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
     return "\n".join(output)
 
 if __name__ == "__main__":
-    print(do_check())
+    print(get_config_tag())
