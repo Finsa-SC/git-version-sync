@@ -1,16 +1,32 @@
 {
   "name": "git-version-sync",
-  "version": "1.0.0",
-  "description": "[![PyPI - Version](https://img.shields.io/pypi/v/git-version-sync)](https://pypi.org/project/git-version-sync/) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)",
+  "version": "1.13.0",
+  "description": "Tools to sync and update semantic versions",
   "main": "index.js",
+  "bin": {
+    "git-version-sync": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "pyproject.toml",
+    "src/"
+  ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "pip install . --break-system-packages || pip install ."
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Finsa-SC/git-version-sync.git"
   },
-  "keywords": [],
+  "keywords": [
+    "git",
+    "versioning",
+    "semver",
+    "pyproject",
+    "cli"
+  ],
+  "author": "Finsa-SC <finsakusumaputra@gmail.com>",
+  "license": "MIT",
   "type": "commonjs",
   "bugs": {
     "url": "https://github.com/Finsa-SC/git-version-sync/issues"
