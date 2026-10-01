@@ -1,5 +1,15 @@
 from pathlib import Path
 
+DEFAULT_CONFIG_FILES = [
+    "pyproject.toml",
+    "Cargo.toml",
+    "package.json",
+    "setup.cfg",
+    "pubspec.yaml",
+    "pom.xml",
+    "composer.json",
+    "docker-compose.yaml"
+]
 
 def get_config_path(config_name: Path|None=None) -> Path:
     from git_version_sync.core.git import get_git_path
@@ -14,14 +24,11 @@ def get_config_path(config_name: Path|None=None) -> Path:
             raise RuntimeError(f"Config file not found: {config_path}")
 
     else:
-        if (config_path := git_path / "pyproject.toml").exists():
-            return config_path
-
-        elif (config_path := git_path / "Cargo.toml").exists():
-            return config_path
-
-        elif (config_path := git_path / "package.json").exists():
-            return config_path
-
-        else:
-            raise RuntimeError(f"No supported config file found")
+        for file_name in DEFAULT_CONFIG_FILES:
+            config_path = git_path / file_name
+            if config_path.exists():
+                return config_path
+        raise ValueError(
+            "No supported config file found in repository root.\n"
+            "hint: Please specify the config file manually using '--config <path>' if you use a custom setup."
+        )
