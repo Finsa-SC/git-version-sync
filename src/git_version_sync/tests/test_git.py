@@ -490,21 +490,26 @@ class TestFetchRemoteTags:
     @patch("subprocess.run")
     def test_fetch_remote_tags_success(self, mock_run):
         """Harus berhasil mengambil tag dari remote."""
-        mock_run.return_value = MagicMock(returncode=0)
+        # Berikan stdout mock agar git rev-parse (jika ada) berhasil
+        mock_run.return_value = MagicMock(returncode=0, stdout="/path/to/repo\n")
 
         fetch_remote_tags()
 
-        call_args = mock_run.call_args_list[0][0][0]
-        assert "git" in call_args
-        assert "fetch" in call_args
-        assert "--tags" in call_args
+        # Ambil pemanggilan subprocess TERAKHIR (yaitu perintah git fetch)
+        last_call_args = mock_run.call_args_list[-1][0][0]
+        assert "git" in last_call_args
+        assert "fetch" in last_call_args
+        assert "--tags" in last_call_args
 
     @patch("subprocess.run")
     def test_fetch_remote_tags_failure(self, mock_run):
         """Harus melempar GitCommandError jika fetch gagal."""
-        mock_run.side_effect = subprocess.CalledProcessError(
-            1, "git fetch", stderr="Network error"
-        )
+        # Pemanggilan 1 (misal rev-parse/root check) berhasil,
+        # Pemanggilan 2 (git fetch) melempar CalledProcessError
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="/path/to/repo\n"),
+            subprocess.CalledProcessError(1, ["git", "fetch"], stderr="Network error")
+        ]
 
         with pytest.raises(GitCommandError, match="Failed to fetch tags from remote"):
             fetch_remote_tags()
