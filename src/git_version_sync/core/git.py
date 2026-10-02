@@ -5,14 +5,12 @@ from packaging.version import Version
 from git_version_sync.exception import GitCommandError, GitPushError
 from git_version_sync.utils import get_config_version
 
-def commit_config_change(new_version: Version, config_path: Path) -> None:
-    config_paths = [str(config) for config in get_config_version(config_path)]
-
-    if not config_path:
+def commit_config_change(new_version: Version, config_version: dict[Path,Version]) -> None:
+    if not config_version:
         return
 
     subprocess.run([
-        'git', 'add', *config_paths],
+        'git', 'add', *config_version.keys()],
         capture_output=True,
         text=True,
         check=True

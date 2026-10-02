@@ -1,62 +1,38 @@
-import subprocess, re
+import re
 from pathlib import Path
 
 from packaging.version import Version
 
 from .undo import do_undo
 from .changelog import generate_changelog
-from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error
-from .check import parse_highest_version, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags
+from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error, \
+    bump_git_tag
+from .check import parse_highest_version, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags, \
+    is_all_config_match, get_config_mismatch_str
 from ..config_handlers import get_config_parser
-from ..exception import GitCommandError
+from ..exception import GitCommandError, ConfigVersionMismatch
 from ..models import BumpRequest, BumpType
 from ..networks import check_network
 from ..utils import get_config_version
 
-def bump_git_tag(new_version: Version, message: str|None = None) -> None:
-    msg = message if message and message.strip() else f"bump version to v{new_version}"
-    command = [
-        'git',
-        'tag',
-        '-a', f'v{new_version}',
-        '-m', msg
-    ]
-
-    try:
-        subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-    except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(e)
-
-        if "already exists" in error_msg:
-            raise GitCommandError(f"Tag 'v{new_version}' already exists in this repository.") from e
-
-        raise GitCommandError(f"Failed to create Git tag:\n{error_msg}") from e
-
-def bump_config_version(new_version: Version, config_name: Path|None=None) -> None:
-    config_list = get_config_version(config_name)
-
-    for config_path in config_list:
-        config_parser = get_config_parser(config_path)
-        config_parser.update_version(new_version)
+def bump_config_version(new_version: Version, config_path: Path) -> None:
+    config_parser = get_config_parser(config_path)
+    config_parser.update_version(new_version)
 
 def bump_version(
         request: BumpRequest,
         base_version: Version,
         new_version: Version,
-        config_path: Path
+        config_version: dict[Path,Version]
 ) -> bool:
     mutated_local = False
 
     try:
-        bump_config_version(new_version, config_path)
-        print(f"Updated {config_path.name} to v{new_version}")
+        for config_path in config_version.keys():
+            bump_config_version(new_version, config_path)
+            print(f"Updated {config_path.name} to v{new_version}")
 
-        commit_config_change(new_version)
+        commit_config_change(new_version, config_version)
         print(f"Committed changes: 'bump version to v{new_version}'")
 
         bump_git_tag(new_version, request.tag_message)
@@ -172,20 +148,19 @@ def do_bump(request: BumpRequest):
     if request.push:
         check_network()
 
-    config_path = get_config_version(request.config_path)
+    config_version = get_config_version(request.config_path)
 
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
 
-    config_tag = get_config_tag()
+    config_tag = get_config_tag(config_version)
     highest_local_tag = parse_highest_version(local_tags)
     highest_overall_tag = parse_highest_version(local_tags | remote_tags)
 
-    if config_tag != highest_local_tag and not request.force:
-        raise GitCommandError(
-            f"Version mismatch detected!\n"
-            f"  Config: v{config_tag}\n"
-            f"  Git   : v{highest_local_tag}\n"
+    all_match = is_all_config_match(config_version)
+    if not all_match and not request.force:
+        raise ConfigVersionMismatch(
+            f"{get_config_mismatch_str(config_version, highest_local_tag)}"
             f"Run `git-version-sync sync` first or use `--force` to bypass."
         )
 
@@ -232,14 +207,14 @@ def do_bump(request: BumpRequest):
         return format_dry_run_output(
             request,
             new_version,
-            config_path
+            config_version
         )
 
     bump_status = bump_version(
         request,
         base_version,
         new_version,
-        config_path
+        config_version
     )
 
     return f"\nSuccess bump version to v{new_version}" if bump_status else "\nFailed to bump version"

@@ -11,7 +11,7 @@ from git_version_sync.core.git import (
     reset_soft_head,
     get_remote_tags
 )
-from git_version_sync.utils import get_list_config_path
+from git_version_sync.utils import get_config_version
 
 
 def get_previous_version(version_list: set[str]) -> Version|None:
@@ -53,7 +53,7 @@ def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name
             print("Reset last git commit.")
 
 
-        configs = [str(config) for config in get_list_config_path(config_name)]
+        configs = [str(config) for config in get_config_version(config_name)]
         str_configs = ", ".join(configs)
         if previous_version:
             from git_version_sync.core.bump import bump_config_version

@@ -36,7 +36,7 @@ from git_version_sync.config_handlers import (
     IniConfigParser,
     XmlConfigParser,
 )
-from git_version_sync.utils import get_list_config_path
+from git_version_sync.utils import get_config_version
 
 
 @pytest.fixture
@@ -101,26 +101,26 @@ class TestGetConfigPath:
 
     def test_auto_detect_pyproject(self, temp_git_repo):
         """Harus mendeteksi pyproject.toml secara otomatis jika ada."""
-        assert get_list_config_path().name == "pyproject.toml"
+        assert get_config_version().name == "pyproject.toml"
 
     def test_auto_detect_package_json(self, temp_git_repo):
         """Harus mendeteksi package.json jika pyproject/cargo tidak ada."""
         Path("pyproject.toml").unlink()
         Path("package.json").write_text('{\n  "name": "test",\n  "version": "1.0.0"\n}\n')
-        assert get_list_config_path().name == "package.json"
+        assert get_config_version().name == "package.json"
 
     def test_custom_config_path(self, temp_git_repo):
         """Harus menggunakan file konfigurasi kustom jika parameter config_path diberikan."""
         custom_file = Path("custom_config.json")
         custom_file.write_text('{"version": "1.0.0"}')
 
-        path = get_list_config_path(custom_file)
+        path = get_config_version(custom_file)
         assert path.name == "custom_config.json"
 
     def test_custom_config_not_found(self, temp_git_repo):
         """Harus melempar RuntimeError jika file kustom tidak ditemukan."""
         with pytest.raises(RuntimeError, match="Config file not found"):
-            get_list_config_path(Path("nonexistent.toml"))
+            get_config_version(Path("nonexistent.toml"))
 
 
 class TestConfigParsers:
