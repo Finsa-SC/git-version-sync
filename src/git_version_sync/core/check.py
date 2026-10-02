@@ -33,24 +33,11 @@ def parse_highest_version(tags: set[str]) -> Version | None:
 
     return max(valid_version) if valid_version else None
 
-def get_config_tag(config_name: Path|None=None) -> Version:
-    config_list = get_list_config_path(config_name)
+def get_config_tag(config_path: Path) -> Version:
+    config_parser = get_config_parser(config_path)
+    config_tag = config_parser.get_version()
 
-    config_found = {}
-    for config_path in config_list:
-        config_parser = get_config_parser(config_path)
-        config_tag = config_parser.get_version()
-
-        if not config_found:
-            config_found = dict(file=config_path.name, version=config_tag)
-        else:
-            if config_found['version'] != config_tag:
-                raise ConfigVersionMismatch(f"Invalid version betwen {config_found['file']}({config_found['version']}) and {config_path.name}({config_tag})")
-
-    if config_found:
-        return config_found['version']
-    else:
-        raise FileNotFoundError("No config file match")
+    return config_tag
 
 def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
     missing_in_local = remote_tags - local_tags
