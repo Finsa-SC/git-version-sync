@@ -1,7 +1,6 @@
 from pathlib import Path
 from packaging.version import Version
 
-from git_version_sync.core.check import get_config_tag
 
 DEFAULT_CONFIG_FILES = [
     "pyproject.toml",
@@ -15,6 +14,7 @@ DEFAULT_CONFIG_FILES = [
 ]
 
 def get_config_version(config_name: Path | None=None) -> dict[Path, Version]:
+    from git_version_sync.core.check import get_config_tag
     from git_version_sync.core.git import get_git_path
 
     git_path = get_git_path()
