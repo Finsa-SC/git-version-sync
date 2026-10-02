@@ -3,7 +3,6 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.exception import GitCommandError, GitPushError
-from git_version_sync.utils import get_config_version
 
 def commit_config_change(new_version: Version, config_version: dict[Path,Version]) -> None:
     if not config_version:
