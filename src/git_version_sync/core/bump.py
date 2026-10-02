@@ -56,8 +56,7 @@ def bump_version(
             print(f"Created GitHub Release v{new_version}{draft_str}")
 
     except Exception as e:
-        error_msg = clean_git_error(e)
-        print(f"\n[!] Error during bump execution: {error_msg}")
+        print(f"\n[!] Error during bump execution: {e}")
         if mutated_local:
             handle_push_error(f"v{new_version}", config_path)
         return False
@@ -68,10 +67,15 @@ def handle_push_error(tag_name: str, config_path):
     print(f"[!] Local repository was modified with tag '{tag_name}'.")
     do_undo(tag_name, remote=True, config_name=config_path)
 
-def format_dry_run_output(request: BumpRequest, new_version: Version, config_path: Path) -> str:
+def format_dry_run_output(request: BumpRequest, new_version: Version, config_version: dict[Path,Version]) -> str:
+    config_out = []
+    for config_path in config_version.keys():
+        config_out.append(f"Would update {config_path.name} to v{new_version} (DRY RUN)",)
+    config_out_str = '\n'.join(config_out)
+
     output: list[str] = [
-        f"Would update {config_path.name} to v{new_version} (DRY RUN)",
         f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
+        f"{config_out_str}"
         f"Would create Git tag v{new_version} (DRY RUN)",
     ]
 
@@ -153,7 +157,7 @@ def do_bump(request: BumpRequest):
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
 
-    config_tag = get_config_tag(config_version)
+    config_tag = parse_highest_version(set(config_version.values()))
     highest_local_tag = parse_highest_version(local_tags)
     highest_overall_tag = parse_highest_version(local_tags | remote_tags)
 
@@ -178,7 +182,7 @@ def do_bump(request: BumpRequest):
         if v is not None
     )
 
-    # if run without bump command, will be interactive
+    # if run without bump type, will be interactive
     if request.bump_type is None:
         bump_type, reason = detect_bump_type(base_version)
         next_version = calculate_next_version(base_version, bump_type)
@@ -186,11 +190,12 @@ def do_bump(request: BumpRequest):
         print(reason)
         print(f"Suggested bump: {bump_type} (v{base_version} -> v{next_version})")
 
-        confirm = input("Apply this version bump? [Y/n]: ").lower()
-        print("")
+        if not request.dry_run:
+            confirm = input("Apply this version bump? [Y/n]: ").lower()
+            print("")
 
-        if confirm not in ["y", 'yes']:
-            return "Bump version has been canceled."
+            if confirm not in ["y", 'yes']:
+                return "Bump version has been canceled."
 
     # Immediately detect version without interactive confirmation
     elif request.bump_type == "auto":
