@@ -25,11 +25,11 @@ def main():
                 ))
 
             case 'sync':
-                print(do_sync(
+                do_sync(
                     args.to_git,
                     args.to_config,
                     config_name=args.config,
-                ))
+                )
 
             case 'check':
                 print(do_check(

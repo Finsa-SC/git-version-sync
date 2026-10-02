@@ -6,7 +6,7 @@ from packaging.version import Version
 from git_version_sync.config_handlers import get_config_parser
 from git_version_sync.core.git import get_remote_tags, fetch_remote_tags
 from git_version_sync.networks import check_network
-from git_version_sync.utils import get_config_path
+from git_version_sync.utils import get_config_version
 
 def get_local_tags() -> set[str]:
     command = ["git", "tag", "--list"]
@@ -21,20 +21,21 @@ def get_local_tags() -> set[str]:
 
     return tags
 
-def parse_highest_version(tags: set[str]) -> Version | None:
+def parse_highest_version(tags: set[str|Version]) -> Version | None:
     valid_version = []
     for tag in tags:
         try:
-            clean_tag = tag.removeprefix("v")
-            valid_version.append(Version(clean_tag))
+            if isinstance(tag, str):
+                clean_tag = tag.removeprefix("v")
+                valid_version.append(Version(clean_tag))
+            else:
+                valid_version.append(tag)
         except Exception:
             continue
 
     return max(valid_version) if valid_version else None
 
-def get_config_tag(config_name: Path|None=None) -> Version:
-    config_path = get_config_path(config_name)
-
+def get_config_tag(config_path: Path) -> Version:
     config_parser = get_config_parser(config_path)
     config_tag = config_parser.get_version()
 
@@ -50,23 +51,51 @@ def get_missing_remote_tags(remote_tags: set[str], local_tags: set[str]) -> set[
 
     return missing_in_remote
 
+def is_all_config_match(configs: dict[Path, Version]) -> bool:
+    prev_ver = None
+    for path, ver in configs.items():
+        if prev_ver is None:
+            prev_ver = ver
+
+        else:
+            if prev_ver != ver:
+                return False
+            prev_ver = ver
+
+    return True
+
+def get_config_mismatch_str(config_items: dict[Path,Version], local_highest: Version) -> str:
+    config_out = []
+    for config, ver in config_items.items():
+        config_out.append(f"{str(config.name):<24}: v{ver}")
+    config_str = "\n".join(config_out)
+    return (
+        f"Version mismatch\n"
+        f"Git Local\t\t: v{local_highest or 'unknown'}\n"
+        f"{config_str}"
+    )
+
 def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
-    config_tag = get_config_tag(config_name)
     local_tags = get_local_tags()
 
+    # Validate local tags
     highest_local_version = parse_highest_version(local_tags)
     if highest_local_version is None:
         return "No local tags found."
 
+    config_version = get_config_version(config_name)
+    all_match = is_all_config_match(config_version)
+    config_tag = None
+    if all_match:
+        config_tag = next(iter(config_version.values()))
+
+    # Offline check
     if no_fetch:
-        if config_tag == highest_local_version:
+        if all_match:
             return f"Version is synchronized with highest local tag (v{config_tag})"
+
         else:
-            return (
-                f"Version mismatch\n"
-                f"Git Local: {highest_local_version or 'unknown'}\n"
-                f"Config:    {config_tag}\n"
-            )
+            return get_config_mismatch_str(config_version, highest_local_version)
 
     check_network()
     fetch_remote_tags()
@@ -89,12 +118,9 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
         output.append(f"Version is synchronized with highest local tag (v{config_tag})")
 
     else:
-        output.append(
-            f"Version mismatch\n"
-            f"Git Local: {highest_local_version or 'unknown'}\n"
-            f"Config:    {config_tag}\n"
-            f"Remote:    {highest_remote or 'unknown'}"
-        )
+        config_msg = get_config_mismatch_str(config_version, highest_local_version)
+        output.append(config_msg)
+        output.append(f"Remote\t\t\t: v{highest_remote or 'unknown'}")
 
     if missing_in_remote:
         output.append("Tag(s) available locally but missing in remote:")
@@ -110,6 +136,3 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
         output.append("")
 
     return "\n".join(output)
-
-if __name__ == "__main__":
-    print(do_check())

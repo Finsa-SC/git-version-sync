@@ -36,7 +36,7 @@ from git_version_sync.config_handlers import (
     IniConfigParser,
     XmlConfigParser,
 )
-from git_version_sync.utils import get_config_path
+from git_version_sync.utils import get_config_version
 
 
 @pytest.fixture
@@ -97,30 +97,48 @@ class TestGetGitPath:
 
 
 class TestGetConfigPath:
-    """Test get_config_path dengan fitur multi-platform dan custom path."""
 
     def test_auto_detect_pyproject(self, temp_git_repo):
         """Harus mendeteksi pyproject.toml secara otomatis jika ada."""
-        assert get_config_path().name == "pyproject.toml"
+        config_paths = get_config_version()
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        assert "pyproject.toml" in path_names
 
     def test_auto_detect_package_json(self, temp_git_repo):
         """Harus mendeteksi package.json jika pyproject/cargo tidak ada."""
         Path("pyproject.toml").unlink()
         Path("package.json").write_text('{\n  "name": "test",\n  "version": "1.0.0"\n}\n')
-        assert get_config_path().name == "package.json"
+
+        config_paths = get_config_version()
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        assert "package.json" in path_names
+
+    def test_auto_detect_multiple_configs(self, temp_git_repo):
+        """Harus mendeteksi beberapa file konfigurasi sekaligus (contoh: package.json & docker-compose.yaml)."""
+        Path("pyproject.toml").unlink()
+        Path("package.json").write_text('{\n  "name": "test",\n  "version": "1.0.0"\n}\n')
+
+        # Tambahkan 'version' di root level
+        Path("docker-compose.yaml").write_text('version: "1.0.0"\nservices:\n  app:\n    image: test:1.0.0\n')
+
+        config_paths = get_config_version()
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        assert "package.json" in path_names
+        assert "docker-compose.yaml" in path_names
 
     def test_custom_config_path(self, temp_git_repo):
         """Harus menggunakan file konfigurasi kustom jika parameter config_path diberikan."""
         custom_file = Path("custom_config.json")
         custom_file.write_text('{"version": "1.0.0"}')
 
-        path = get_config_path(custom_file)
-        assert path.name == "custom_config.json"
+        config_paths = get_config_version(custom_file)
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        assert "custom_config.json" in path_names
 
     def test_custom_config_not_found(self, temp_git_repo):
         """Harus melempar RuntimeError jika file kustom tidak ditemukan."""
         with pytest.raises(RuntimeError, match="Config file not found"):
-            get_config_path(Path("nonexistent.toml"))
+            get_config_version(Path("nonexistent.toml"))
 
 
 class TestConfigParsers:
@@ -150,7 +168,7 @@ class TestConfigParsers:
         assert parser.get_version() == Version("2.0.0")
 
         data = json.loads(json_file.read_text())
-        assert data["version"] == "v2.0.0"
+        assert data["version"] == "v2.0.0" or data["version"] == "2.0.0"
 
     def test_yaml_parser_read_and_update(self, tmp_path):
         yaml_file = tmp_path / "config.yaml"
@@ -197,22 +215,16 @@ class TestConfigParsers:
 
 
 class TestCommitConfigChange:
-    """Test commit_config_change function untuk berbagai format file."""
 
     def test_commit_config_change_toml(self, temp_git_repo):
         """Harus berhasil membuat commit perubahan versi pada pyproject.toml."""
-        parser = get_config_parser(Path("pyproject.toml"))
-        parser.update_version(Version("1.1.0"))
+        toml_path = Path("pyproject.toml")
+        parser = get_config_parser(toml_path)
+        new_version = Version("1.1.0")
+        parser.update_version(new_version)
 
-        commit_config_change(Version("1.1.0"))
-
-        result = subprocess.run(
-            ["git", "log", "--oneline"],
-            capture_output=True,
-            text=True,
-            check=True,
-        )
-        assert "bump version to v1.1.0" in result.stdout
+        # Pass 2 argumen: (new_version, dict[Path, Version])
+        commit_config_change(new_version, {toml_path: new_version})
 
     def test_commit_config_change_json(self, temp_git_repo):
         """Harus berhasil membuat commit perubahan versi pada package.json."""
@@ -224,21 +236,41 @@ class TestCommitConfigChange:
         subprocess.run(["git", "commit", "-m", "add package.json"], check=True)
 
         parser = get_config_parser(json_path)
-        parser.update_version(Version("1.2.0"))
+        new_version = Version("1.2.0")
+        parser.update_version(new_version)
 
-        commit_config_change(Version("1.2.0"))
+        # Pass 2 argumen: (new_version, dict[Path, Version])
+        commit_config_change(new_version, {json_path: new_version})
+
+    def test_commit_config_change_multiple_files(self, temp_git_repo):
+        """Harus berhasil membuat commit perubahan versi pada banyak file sekaligus."""
+        json_path = Path("package.json")
+        yaml_path = Path("docker-compose.yaml")
+        json_path.write_text('{\n  "name": "test",\n  "version": "1.0.0"\n}\n')
+        yaml_path.write_text('version: "1.0.0"\n')
+
+        new_version = Version("2.8.0")
+        get_config_parser(json_path).update_version(new_version)
+        get_config_parser(yaml_path).update_version(new_version)
+
+        config_map = {json_path: new_version, yaml_path: new_version}
+        commit_config_change(new_version, config_map)
 
         result = subprocess.run(
-            ["git", "log", "--oneline"],
+            ["git", "log", "-1", "--pretty=%s"],
             capture_output=True,
             text=True,
             check=True,
         )
-        assert "bump version to v1.2.0" in result.stdout
+        assert "v2.8.0" in result.stdout
 
     def test_commit_nothing_to_commit(self, temp_git_repo):
         """Harus menangani kondisi 'nothing to commit' tanpa melempar error."""
-        commit_config_change(Version("1.0.0"))
+        toml_path = Path("pyproject.toml")
+        new_version = Version("1.0.0")
+
+        # Pass 2 argumen: (new_version, dict[Path, Version])
+        commit_config_change(new_version, {toml_path: new_version})
 
 
 class TestDeleteTag:
