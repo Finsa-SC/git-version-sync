@@ -2,8 +2,8 @@ from pathlib import Path
 from packaging.version import Version
 
 from .bump import bump_config_version, bump_git_tag
-from .check import get_config_tag, get_local_tags, parse_highest_version, is_all_config_match
-from .git import fetch_remote_tags, is_branch_behind_remote
+from .check import get_config_tag, parse_highest_version, is_all_config_match
+from .git import fetch_remote_tags, is_branch_behind_remote, get_local_tags
 from ..networks import check_network
 from ..utils import get_config_version
 

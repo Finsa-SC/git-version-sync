@@ -2,14 +2,14 @@ from pathlib import Path
 
 from packaging.version import Version
 
-from git_version_sync.core.check import get_local_tags, parse_highest_version
+from git_version_sync.core.check import parse_highest_version
 from git_version_sync.core.git import (
     delete_tag,
     delete_remote_tag,
     get_tag_commit,
     get_head_commit,
     reset_soft_head,
-    get_remote_tags
+    get_remote_tags, get_local_tags
 )
 from git_version_sync.utils import get_config_version
 

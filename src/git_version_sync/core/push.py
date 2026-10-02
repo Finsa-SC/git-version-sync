@@ -1,8 +1,8 @@
 from packaging.version import Version
 
 from .changelog import generate_changelog
-from .check import get_local_tags, get_remote_tags, parse_highest_version
-from .git import push_to_remote, fetch_remote_tags, get_commit_since_tag, create_github_release
+from .check import get_remote_tags, parse_highest_version
+from .git import push_to_remote, fetch_remote_tags, get_commit_since_tag, create_github_release, get_local_tags
 
 
 def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|None:
