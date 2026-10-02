@@ -16,8 +16,6 @@ keywords = ["git", "versioning", "semver", "pyproject", "cli"]
 
 dependencies = [
     "packaging>=26.3",
-    "pytest>=9.1.1",
-    "pytest-mock>=3.15.1",
     "pyyaml>=6.0.3",
 ]
 
@@ -29,3 +27,8 @@ Homepage = "https://github.com/Finsa-SC/git-version-sync"
 Repository = "https://github.com/Finsa-SC/git-version-sync"
 Issues = "https://github.com/Finsa-SC/git-version-sync/issues"
 pypi = "https://pypi.org/project/git-version-sync/"
+
+[dependency-groups]
+dev = [
+    "pyinstaller>=6.22.3",
+]

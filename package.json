@@ -1,6 +1,6 @@
 {
   "name": "git-version-sync",
-  "version": "v1.14.2",
+  "version": "1.14.2",
   "description": "Tools to sync and update semantic versions",
   "main": "index.js",
   "bin": {
@@ -8,12 +8,10 @@
   },
   "files": [
     "index.js",
-    "pyproject.toml",
-    "src/"
+    "bin/",
+    "README.md",
+    "LICENSE"
   ],
-  "scripts": {
-    "postinstall": "pip install . --break-system-packages || pip install ."
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Finsa-SC/git-version-sync.git"
