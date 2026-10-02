@@ -11,7 +11,7 @@ from ..config_handlers import get_config_parser
 from ..exception import GitCommandError
 from ..models import BumpRequest, BumpType
 from ..networks import check_network
-from ..utils import get_list_config_path
+from ..utils import get_config_version
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
@@ -22,15 +22,23 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
         '-m', msg
     ]
 
-    subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        check=True
-    )
+    try:
+        subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+
+        if "already exists" in error_msg:
+            raise GitCommandError(f"Tag 'v{new_version}' already exists in this repository.") from e
+
+        raise GitCommandError(f"Failed to create Git tag:\n{error_msg}") from e
 
 def bump_config_version(new_version: Version, config_name: Path|None=None) -> None:
-    config_list = get_list_config_path(config_name)
+    config_list = get_config_version(config_name)
 
     for config_path in config_list:
         config_parser = get_config_parser(config_path)
@@ -164,7 +172,7 @@ def do_bump(request: BumpRequest):
     if request.push:
         check_network()
 
-    config_path = get_list_config_path(request.config_path)
+    config_path = get_config_version(request.config_path)
 
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()

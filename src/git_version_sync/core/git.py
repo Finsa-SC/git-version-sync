@@ -3,10 +3,10 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.exception import GitCommandError, GitPushError
-from git_version_sync.utils import get_list_config_path
+from git_version_sync.utils import get_config_version
 
 def commit_config_change(new_version: Version, config_path: Path) -> None:
-    config_paths = [str(config) for config in get_list_config_path(config_path)]
+    config_paths = [str(config) for config in get_config_version(config_path)]
 
     if not config_path:
         return
@@ -124,6 +124,30 @@ def delete_remote_tag(version: Version) -> None:
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
+
+def bump_git_tag(new_version: Version, message: str|None = None) -> None:
+    msg = message if message and message.strip() else f"bump version to v{new_version}"
+    command = [
+        'git',
+        'tag',
+        '-a', f'v{new_version}',
+        '-m', msg
+    ]
+
+    try:
+        subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+
+        if "already exists" in error_msg:
+            raise GitCommandError(f"Tag 'v{new_version}' already exists in this repository.") from e
+
+        raise GitCommandError(f"Failed to create Git tag:\n{error_msg}") from e
 
 def get_tag_commit(tag_name: str) -> str | None:
     command = ["git", "rev-parse", f"{tag_name}^{{commit}}"]
