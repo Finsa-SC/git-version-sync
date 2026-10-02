@@ -1,25 +1,11 @@
-import subprocess
 from pathlib import Path
 
 from packaging.version import Version
 
 from git_version_sync.config_handlers import get_config_parser
-from git_version_sync.core.git import get_remote_tags, fetch_remote_tags
+from git_version_sync.core.git import get_remote_tags, fetch_remote_tags, get_local_tags
 from git_version_sync.networks import check_network
 from git_version_sync.utils import get_config_version
-
-def get_local_tags() -> set[str]:
-    command = ["git", "tag", "--list"]
-    result = subprocess.run(
-        command,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-
-    tags = {tag for tag in result.stdout.strip().splitlines()}
-
-    return tags
 
 def parse_highest_version(tags: set[str|Version]) -> Version | None:
     valid_version = []

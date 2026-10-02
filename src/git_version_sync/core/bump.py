@@ -6,8 +6,8 @@ from packaging.version import Version
 from .undo import do_undo
 from .changelog import generate_changelog
 from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error, \
-    bump_git_tag
-from .check import parse_highest_version, get_local_tags, get_config_tag, get_remote_tags, get_missing_local_tags, \
+    bump_git_tag, get_local_tags
+from .check import parse_highest_version, get_config_tag, get_remote_tags, get_missing_local_tags, \
     is_all_config_match, get_config_mismatch_str
 from ..config_handlers import get_config_parser
 from ..exception import GitCommandError, ConfigVersionMismatch

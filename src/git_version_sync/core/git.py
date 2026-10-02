@@ -55,6 +55,8 @@ def push_to_remote(new_version: list[Version]|Version) -> None:
         raise GitPushError(f"Failed to push to remote: \n{error_msg}") from e
 
 def fetch_remote_tags():
+    get_git_path()
+
     command = ['git', 'fetch', '--tags', 'origin']
 
     try:
@@ -316,3 +318,24 @@ def clean_git_error(e: subprocess.CalledProcessError) -> str:
         return "\n".join(cleand_lines)
 
     return raw_error.strip()
+
+
+def get_local_tags() -> set[str]:
+    get_git_path()
+
+    command = ["git", "tag", "--list"]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+
+        tags = {tag for tag in result.stdout.strip().splitlines()}
+
+        return tags
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
