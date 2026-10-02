@@ -21,12 +21,15 @@ def get_local_tags() -> set[str]:
 
     return tags
 
-def parse_highest_version(tags: set[str]) -> Version | None:
+def parse_highest_version(tags: set[str|Version]) -> Version | None:
     valid_version = []
     for tag in tags:
         try:
-            clean_tag = tag.removeprefix("v")
-            valid_version.append(Version(clean_tag))
+            if isinstance(tag, str):
+                clean_tag = tag.removeprefix("v")
+                valid_version.append(Version(clean_tag))
+            else:
+                valid_version.append(tag)
         except Exception:
             continue
 
