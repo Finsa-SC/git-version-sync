@@ -116,8 +116,8 @@ def delete_tag(version: Version) -> None:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
-def delete_remote_tag(version: Version) -> None:
-    command = ['git', 'push', 'origin', '--delete', f"v{version}"]
+def delete_remote_tag(version: Version, remote_name: str) -> None:
+    command = ['git', 'push', remote_name, '--delete', f"v{version}"]
 
     try:
         subprocess.run(
