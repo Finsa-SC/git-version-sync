@@ -223,7 +223,6 @@ class TestCommitConfigChange:
         new_version = Version("1.1.0")
         parser.update_version(new_version)
 
-        # Pass 2 argumen: (new_version, dict[Path, Version])
         commit_config_change(new_version, {toml_path: new_version})
 
     def test_commit_config_change_json(self, temp_git_repo):
@@ -239,7 +238,6 @@ class TestCommitConfigChange:
         new_version = Version("1.2.0")
         parser.update_version(new_version)
 
-        # Pass 2 argumen: (new_version, dict[Path, Version])
         commit_config_change(new_version, {json_path: new_version})
 
     def test_commit_config_change_multiple_files(self, temp_git_repo):
@@ -269,7 +267,6 @@ class TestCommitConfigChange:
         toml_path = Path("pyproject.toml")
         new_version = Version("1.0.0")
 
-        # Pass 2 argumen: (new_version, dict[Path, Version])
         commit_config_change(new_version, {toml_path: new_version})
 
 
@@ -417,10 +414,15 @@ class TestGetRemoteTags:
     @patch("subprocess.run")
     def test_get_remote_tags_success(self, mock_run):
         """Harus mem-parse daftar tag dari remote secara presisi."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="abc123\trefs/tags/v1.0.0\ndef456\trefs/tags/v1.1.0\n",
-        )
+        def side_effect(cmd, *args, **kwargs):
+            if cmd == ["git", "remote"]:
+                return MagicMock(returncode=0, stdout="origin\n")
+            return MagicMock(
+                returncode=0,
+                stdout="abc123\trefs/tags/v1.0.0\ndef456\trefs/tags/v1.1.0\n",
+            )
+
+        mock_run.side_effect = side_effect
 
         tags = get_remote_tags()
         assert "v1.0.0" in tags
@@ -429,7 +431,12 @@ class TestGetRemoteTags:
     @patch("subprocess.run")
     def test_get_remote_tags_empty(self, mock_run):
         """Harus mengembalikan set kosong jika tidak ada tag di remote."""
-        mock_run.return_value = MagicMock(returncode=0, stdout="")
+        def side_effect(cmd, *args, **kwargs):
+            if cmd == ["git", "remote"]:
+                return MagicMock(returncode=0, stdout="origin\n")
+            return MagicMock(returncode=0, stdout="")
+
+        mock_run.side_effect = side_effect
 
         tags = get_remote_tags()
         assert len(tags) == 0
@@ -437,10 +444,15 @@ class TestGetRemoteTags:
     @patch("subprocess.run")
     def test_get_remote_tags_filters_deref(self, mock_run):
         """Harus membuang entri dereference tag annotated (^{})."""
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="abc123\trefs/tags/v1.0.0\ndef456\trefs/tags/v1.0.0^{}\n",
-        )
+        def side_effect(cmd, *args, **kwargs):
+            if cmd == ["git", "remote"]:
+                return MagicMock(returncode=0, stdout="origin\n")
+            return MagicMock(
+                returncode=0,
+                stdout="abc123\trefs/tags/v1.0.0\ndef456\trefs/tags/v1.0.0^{}\n",
+            )
+
+        mock_run.side_effect = side_effect
 
         tags = get_remote_tags()
         assert tags == {"v1.0.0"}
@@ -490,12 +502,15 @@ class TestFetchRemoteTags:
     @patch("subprocess.run")
     def test_fetch_remote_tags_success(self, mock_run):
         """Harus berhasil mengambil tag dari remote."""
-        # Berikan stdout mock agar git rev-parse (jika ada) berhasil
-        mock_run.return_value = MagicMock(returncode=0, stdout="/path/to/repo\n")
+        def side_effect(cmd, *args, **kwargs):
+            if cmd == ["git", "remote"]:
+                return MagicMock(returncode=0, stdout="origin\n")
+            return MagicMock(returncode=0, stdout="/path/to/repo\n")
+
+        mock_run.side_effect = side_effect
 
         fetch_remote_tags()
 
-        # Ambil pemanggilan subprocess TERAKHIR (yaitu perintah git fetch)
         last_call_args = mock_run.call_args_list[-1][0][0]
         assert "git" in last_call_args
         assert "fetch" in last_call_args
@@ -504,10 +519,9 @@ class TestFetchRemoteTags:
     @patch("subprocess.run")
     def test_fetch_remote_tags_failure(self, mock_run):
         """Harus melempar GitCommandError jika fetch gagal."""
-        # Pemanggilan 1 (misal rev-parse/root check) berhasil,
-        # Pemanggilan 2 (git fetch) melempar CalledProcessError
         mock_run.side_effect = [
             MagicMock(returncode=0, stdout="/path/to/repo\n"),
+            MagicMock(returncode=0, stdout="origin\n"),
             subprocess.CalledProcessError(1, ["git", "fetch"], stderr="Network error")
         ]
 
