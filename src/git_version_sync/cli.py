@@ -1,4 +1,4 @@
-from git_version_sync.models import BumpRequest, SyncRequest, PushRequest
+from git_version_sync.models import BumpRequest, SyncRequest, PushRequest, UndoRequest
 from .builder import create_parser
 from .core import do_check, do_bump, do_sync, do_push, do_undo
 
@@ -54,11 +54,14 @@ def main():
                 )
 
             case 'undo':
-                do_undo(
-                    args.target,
-                    remote=args.remote,
+                undo_request = UndoRequest(
+                    undo_tag=args.target,
                     force=args.force,
                     config_name=args.config,
+                    remote_name=args.remote,
+                )
+                do_undo(
+                    undo_request
                 )
 
             case _:
