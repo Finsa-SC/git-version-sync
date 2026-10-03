@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+
+src/git_version_sync/tests/
+tests/
+
+.venv/
+venv/
+
+dist/
+build/
+
+.git/
+.github/
+
+uv.lock
+pyproject.toml

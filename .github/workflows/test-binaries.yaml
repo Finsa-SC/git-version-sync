@@ -1,0 +1,50 @@
+name: Test Binaries
+
+on:
+  push:
+    branches:
+      - dev
+  workflow_dispatch:
+
+jobs:
+  build-binaries:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x64
+            executable: git-version-sync
+
+          - os: windows-latest
+            platform: win-x64
+            executable: git-version-sync.exe
+
+          - os: macos-latest
+            platform: macos-arm64
+            executable: git-version-sync
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Build binary
+        run: uv run pyinstaller --name git-version-sync --onefile --paths src pyinstaller_entry.py
+
+      - name: Test binary
+        shell: bash
+        run: ./dist/${{ matrix.executable }} --help
+
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: git-version-sync-${{ matrix.platform }}
+          path: dist/${{ matrix.executable }}

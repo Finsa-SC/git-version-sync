@@ -17,14 +17,10 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
           python-version: "3.11"
 
-      - name: Install Dependencies
-        run: uv sync --all-extras --dev
+      - name: Install Project Dependencies
+        run: uv sync --all-extras
 
       - name: Run Pytest
-        run: uv run pytest
+        run: uv run --with pytest --with pytest-mock pytest
