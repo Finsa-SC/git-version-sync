@@ -1,4 +1,4 @@
-from git_version_sync.models import BumpRequest, SyncRequest
+from git_version_sync.models import BumpRequest, SyncRequest, PushRequest
 from .builder import create_parser
 from .core import do_check, do_bump, do_sync, do_push, do_undo
 
@@ -43,10 +43,14 @@ def main():
                 ))
 
             case 'push':
+                push_request = PushRequest(
+                    tags=args.tags,
+                    push_all=args.all,
+                    release=args.release,
+                    remote_name=args.remote,
+                )
                 do_push(
-                    args.tags,
-                    args.all,
-                    args.release,
+                    push_request
                 )
 
             case 'undo':

@@ -3,6 +3,7 @@ from packaging.version import Version
 from .changelog import generate_changelog
 from .check import get_remote_tags, parse_highest_version
 from .git import push_to_remote, fetch_remote_tags, get_commit_since_tag, create_github_release, get_local_tags
+from ..models import PushRequest
 
 
 def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|None:
@@ -21,7 +22,7 @@ def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|N
 
     return max(previous_tag)
 
-def do_push(tags: list[str], push_all: bool=False, release: str|None=None):
+def do_push(request: PushRequest):
     fetch_remote_tags()
 
     local_tags = get_local_tags()
@@ -34,11 +35,11 @@ def do_push(tags: list[str], push_all: bool=False, release: str|None=None):
     if latest_tags is None:
         raise RuntimeError("Failed to push to remote, No local tag found.")
 
-    if push_all:
+    if request.push_all:
         tags_to_push.extend(Version(ver) for ver in unpush_tags)
 
-    elif tags:
-        tags_to_push.extend(Version(ver) for ver in tags if ver in unpush_tags)
+    elif request.tags:
+        tags_to_push.extend(Version(ver) for ver in request.tags if ver in unpush_tags)
 
     elif f"v{latest_tags}" in unpush_tags:
         tags_to_push.append(latest_tags)
@@ -53,10 +54,10 @@ def do_push(tags: list[str], push_all: bool=False, release: str|None=None):
     print(f"Pushing tag(s) to remote: {', '.join(f'v{ver}' for ver in tags_to_push)}")
     push_to_remote(tags_to_push)
 
-    if release is not None:
+    if request.release is not None:
         for target_version in tags_to_push:
-            if release.strip():
-                change_log = release
+            if request.release.strip():
+                change_log = request.release
             else:
                 prev_tag = get_previous_tag(target_version, local_tags)
                 commits = get_commit_since_tag(prev_tag, target_version)
