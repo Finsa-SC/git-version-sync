@@ -55,10 +55,10 @@ def get_config_mismatch_str(config_items: dict[Path,Version], local_highest: Ver
     for config, ver in config_items.items():
         config_out.append(f"{str(config.name):<24}: v{ver}")
     config_str = "\n".join(config_out)
-    local_highest_str = f"v{local_highest}" if local_highest else None
+    local_highest_str = f"v{local_highest}" if local_highest else 'unknown'
     return (
         f"Version mismatch\n"
-        f"Git Local\t\t: {local_highest_str or 'unknown'}\n"
+        f"Git Local\t\t: {local_highest_str}\n"
         f"{config_str}"
     )
 
@@ -108,11 +108,12 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
         output.append(f"Version is synchronized with highest local tag (v{config_tag})")
 
     else:
-        highest_remote_str = f"v{highest_remote}" if highest_remote else None
+        highest_remote_str = f"v{highest_remote}" if highest_remote else 'unknown'
+
         config_msg = get_config_mismatch_str(config_version, highest_local_version)
         output.append("")
         output.append(config_msg)
-        output.append(f"Remote\t\t\t: {highest_remote_str or 'unknown'}")
+        output.append(f"Remote\t\t\t: {highest_remote_str}")
 
     if missing_in_remote:
         output.append(f"\nPending Remote Sync ({remote_name}):")

@@ -1,4 +1,4 @@
-from git_version_sync.models import BumpRequest
+from git_version_sync.models import BumpRequest, SyncRequest
 from .builder import create_parser
 from .core import do_check, do_bump, do_sync, do_push, do_undo
 
@@ -25,10 +25,14 @@ def main():
                 ))
 
             case 'sync':
+                sync_request = SyncRequest(
+                    to_git      =args.to_git,
+                    to_config   =args.to_config,
+                    config_name =args.config,
+                    remote_name =args.remote,
+                )
                 do_sync(
-                    args.to_git,
-                    args.to_config,
-                    config_name=args.config,
+                    sync_request
                 )
 
             case 'check':

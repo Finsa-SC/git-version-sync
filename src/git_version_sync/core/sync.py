@@ -4,18 +4,18 @@ from packaging.version import Version
 from .bump import bump_config_version, bump_git_tag
 from .check import get_config_tag, parse_highest_version, is_all_config_match
 from .git import fetch_remote_tags, is_branch_behind_remote, get_local_tags
+from ..models import SyncRequest
 from ..networks import check_network
 from ..utils import get_config_version
 
 def sync_version(
-        to_git: bool,
-        to_config: bool,
+        request: SyncRequest,
         highest_local_tag:Version|None,
         config_tag: Version,
         config_version: dict[Path,Version]
 ) -> None:
 
-    if to_git:
+    if request.to_git:
         if highest_local_tag:
             for config_path in config_version.keys():
                 bump_config_version(highest_local_tag, config_path)
@@ -23,7 +23,7 @@ def sync_version(
         else:
             raise RuntimeError("No git tag found on local.")
 
-    elif to_config and highest_local_tag:
+    elif request.to_config and highest_local_tag:
         bump_git_tag(config_tag, message=f"Sync git tag to v{config_tag}")
         print(f"Synced Git tag to match config version v{config_tag}")
 
@@ -46,9 +46,9 @@ def sync_version(
 
         print(f"Synced workspace to highest version v{target_version}")
 
-def do_sync(to_git: bool=False, to_config: bool=False, config_name: Path|None=None) -> None:
+def do_sync(request: SyncRequest) -> None:
     check_network()
-    fetch_remote_tags()
+    fetch_remote_tags(request.remote_name)
 
     if is_branch_behind_remote():
         raise RuntimeError(
@@ -56,7 +56,7 @@ def do_sync(to_git: bool=False, to_config: bool=False, config_name: Path|None=No
             "Please run `git pull` first before syncing version"
         )
 
-    config_list = get_config_version(config_name)
+    config_list = get_config_version(request.config_name)
     local_tags = get_local_tags()
 
     highest_local_tag = parse_highest_version(local_tags)
@@ -76,4 +76,4 @@ def do_sync(to_git: bool=False, to_config: bool=False, config_name: Path|None=No
         print(f"Already in sync at (v{config_tag})")
         return
 
-    sync_version(to_git, to_config, highest_local_tag, config_tag, config_list)
+    sync_version(request, highest_local_tag, config_tag, config_list)
