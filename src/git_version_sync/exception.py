@@ -9,3 +9,6 @@ class GitPushError(GitCommandError):
 
 class ConfigVersionMismatch(GitVersionSyncError):
     ...
+
+class GitRemoteError(GitVersionSyncError):
+    ...

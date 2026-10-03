@@ -2,7 +2,8 @@ import subprocess, shutil
 from pathlib import Path
 from packaging.version import Version
 
-from git_version_sync.exception import GitCommandError, GitPushError
+from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteError
+
 
 def commit_config_change(new_version: Version, config_version: dict[Path,Version]) -> None:
     if not config_version:
@@ -54,10 +55,16 @@ def push_to_remote(new_version: list[Version]|Version) -> None:
         error_msg = clean_git_error(e)
         raise GitPushError(f"Failed to push to remote: \n{error_msg}") from e
 
-def fetch_remote_tags():
+def fetch_remote_tags(remote_name: str = 'origin'):
+    # Validate git structure
     get_git_path()
+    if not has_remote(remote_name):
+        raise GitRemoteError(
+            f"Remote '{remote_name}' not found.\n"
+            f"Hint: Add a remote using 'git remote add {remote_name} <url>'"
+        )
 
-    command = ['git', 'fetch', '--tags', 'origin']
+    command = ['git', 'fetch', '--tags', remote_name]
 
     try:
         subprocess.run(
@@ -203,7 +210,13 @@ def get_git_path() -> Path:
 
     return Path(result.stdout.strip())
 
-def get_remote_tags() -> set[str]:
+def get_remote_tags(remote_name: str = 'origin') -> set[str]:
+    if not has_remote(remote_name):
+        raise GitRemoteError(
+            "No remote repository found in this project.\n"
+            "Hint: Connect a remote repository first using 'git remote add origin <url>'"
+        )
+
     command = ['git', 'ls-remote', '--tags', 'origin']
     result = subprocess.run(
         command,
@@ -339,3 +352,23 @@ def get_local_tags() -> set[str]:
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
+
+def has_remote(remote_name: str = 'origin') -> bool:
+    command = ['git', 'remote']
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        remotes = [rmt.strip() for rmt in result.stdout.splitlines()]
+        if remote_name == 'origin':
+            return len(remotes) >= 1
+        else:
+            return remote_name in remotes
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
