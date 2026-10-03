@@ -9,8 +9,9 @@ from git_version_sync.core.git import (
     get_tag_commit,
     get_head_commit,
     reset_soft_head,
-    get_remote_tags, get_local_tags
+    get_remote_tags, get_local_tags, has_remote
 )
+from git_version_sync.exception import GitRemoteError
 from git_version_sync.utils import get_config_version
 
 
@@ -23,7 +24,7 @@ def get_previous_version(version_list: set[str]) -> Version|None:
         return None
     return sorted_tags[-2]
 
-def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name: Path|None=None) -> None:
+def do_undo(tag: str|None=None, remote:str|None="origin", force:bool=False, config_name: Path|None=None) -> None:
     from git_version_sync.core.bump import bump_config_version
 
     config_version = get_config_version(config_name)
@@ -68,7 +69,10 @@ def do_undo(tag: str|None=None, remote:bool=False, force:bool=False, config_name
         print(f"Skipped resetting config and git commit to preserve history.")
 
     if remote:
-        delete_remote_tag(target_tag)
+        if not has_remote(remote):
+            raise GitRemoteError(f"No remote repository found for {remote}.")
+
+        delete_remote_tag(target_tag, remote)
         print(f"Deleted remote tag v{target_tag}")
 
     delete_tag(target_tag)
