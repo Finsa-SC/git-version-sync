@@ -27,6 +27,11 @@ def get_previous_version(version_list: set[str]) -> Version|None:
 def do_undo(tag: str|None=None, remote:str|None="origin", force:bool=False, config_name: Path|None=None) -> None:
     from git_version_sync.core.bump import bump_config_version
 
+    # Validate remote if use remote argument
+    if remote is not None:
+        if not has_remote(remote):
+            raise GitRemoteError(f"No remote repository found for {remote}.")
+
     config_version = get_config_version(config_name)
     local_tags = get_local_tags()
     latest_tag = parse_highest_version(local_tags)
@@ -44,6 +49,7 @@ def do_undo(tag: str|None=None, remote:str|None="origin", force:bool=False, conf
         target_str = f"v{target_tag}"
         remote_info = " and REMOTE" if remote else ""
         confirm = input(f"Are you sure you want to undo tag {target_str} (LOCAL{remote_info}) and revert to v{previous_version}? [y/N]: ").strip().lower()
+        print()
         if confirm not in ["y", "yes", "yeah", "ye", "yee"]:
             print("Undo operation canceled.")
             return
@@ -60,7 +66,7 @@ def do_undo(tag: str|None=None, remote:str|None="origin", force:bool=False, conf
             for config_path in config_version.keys():
                 bump_config_version(previous_version, config_path)
 
-                print(f"Reverted {config_path.name} version to v{previous_version}")
+                print(f"Reverted {config_path.name} version to 'v{previous_version}'.")
         else:
             print(f"Skipped config revert (no previous tag found).")
 
@@ -69,16 +75,18 @@ def do_undo(tag: str|None=None, remote:str|None="origin", force:bool=False, conf
         print(f"Skipped resetting config and git commit to preserve history.")
 
     if remote:
-        if not has_remote(remote):
-            raise GitRemoteError(f"No remote repository found for {remote}.")
+        if not get_remote_tags(remote):
+            print(f"Skipped remote tag deletion (tag 'v{target_tag}' not found on remote).")
+        else:
+            delete_remote_tag(target_tag, remote)
+            print(f"Deleted remote tag 'v{target_tag}'.")
 
-        delete_remote_tag(target_tag, remote)
-        print(f"Deleted remote tag v{target_tag}")
-
-    delete_tag(target_tag)
-    print(f"Deleted local tag v{target_tag}")
+        delete_tag(target_tag)
+        print(f"Deleted local tag 'v{target_tag}'.")
 
     # Check deleted tag in remote
     remote_tags = get_remote_tags()
     if not remote and (f"v{target_tag}" in remote_tags or str(target_tag) in remote_tags):
         print(f"Note: v{target_tag} still exists on remote. Run with '-r' to delete it from remote.")
+
+    print(f"\nSuccessfully reverted version from 'v{latest_tag}' -> 'v{previous_version}'")
