@@ -30,7 +30,7 @@ class JsonConfigParser(BaseConfigParser):
         ]
 
     @staticmethod
-    def _get_by_path(self, data: dict[str, Any], path: Tuple[str, ...]) -> Optional[Any]:
+    def _get_by_path(data: dict[str, Any], path: Tuple[str, ...]) -> Optional[Any]:
         curr = data
         for key in path:
             if isinstance(curr, dict) and key in curr:
@@ -40,7 +40,7 @@ class JsonConfigParser(BaseConfigParser):
         return curr
 
     @staticmethod
-    def _set_by_path(self, data: dict[str, Any], path: Tuple[str, ...], value: Any) -> bool:
+    def _set_by_path(data: dict[str, Any], path: Tuple[str, ...], value: Any) -> bool:
         curr = data
         for key in path[:-1]:
             if isinstance(curr, dict) and key in curr:
