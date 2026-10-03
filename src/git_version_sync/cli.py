@@ -35,6 +35,7 @@ def main():
                 print(do_check(
                     config_name=args.config,
                     no_fetch=args.no_fetch,
+                    remote_name=args.remote or "origin"
                 ))
 
             case 'push':

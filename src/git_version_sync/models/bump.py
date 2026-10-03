@@ -14,3 +14,4 @@ class BumpRequest:
     push        : bool = False
     draft       : bool = False
     dry_run     : bool = False
+    remote_name : str  = "origin"

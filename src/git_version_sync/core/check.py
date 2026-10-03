@@ -61,7 +61,7 @@ def get_config_mismatch_str(config_items: dict[Path,Version], local_highest: Ver
         f"{config_str}"
     )
 
-def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
+def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "origin") -> str:
     local_tags = get_local_tags()
 
     # Validate local tags
@@ -78,7 +78,10 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
     # Offline check
     if no_fetch:
         if all_match:
-            return f"Version is synchronized with highest local tag (v{config_tag})"
+            return (
+                f"Version is synchronized with highest local tag (v{config_tag})\n"
+                f"(Skipped remote fetch. Remote status may be out of date.)"
+            )
 
         else:
             return get_config_mismatch_str(config_version, highest_local_version)
@@ -86,7 +89,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
     check_network()
     fetch_remote_tags()
 
-    remote_tags = get_remote_tags()
+    remote_tags = get_remote_tags(remote_name)
 
     output = []
 
@@ -96,12 +99,12 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
     missing_in_remote = get_missing_remote_tags(remote_tags, local_tags)
 
     # Check if local version match but missing from remote
-    if highest_local_version == config_tag and (missing_in_remote or missing_in_local):
+    if highest_local_version == config_tag and (missing_in_remote or missing_in_local) and highest_remote:
         status = "behind" if highest_remote > highest_local_version else "ahead of"
         output.append(f"Config matches local tag (v{config_tag}), but local is {status} remote!")
 
     elif highest_local_version == config_tag:
-        output.append(f"Version is synchronized with highest local tag (v{config_tag})")
+        output.append(f"Version is synchronized with highest local tag (v{config_tag})\n")
 
     else:
         config_msg = get_config_mismatch_str(config_version, highest_local_version)
@@ -109,14 +112,13 @@ def do_check(config_name: Path|None, no_fetch: bool=False) -> str:
         output.append(f"Remote\t\t\t: v{highest_remote or 'unknown'}")
 
     if missing_in_remote:
-        output.append("Tag(s) available locally but missing in remote:")
+        output.append(f"Pending Remote Sync ({remote_name}):")
         for tag in sorted(missing_in_remote):
             output.append(f"  - {tag}")
-        output.append("  (Run 'git-version-sync push' to sync)")
-        output.append("")
+        output.append("\nRun 'git-version-sync push' to sync to remote.")
 
     if missing_in_local:
-        output.append(f"New tag(s) found from remote: ")
+        output.append(f"\nNew tag(s) found from remote: ")
         for tag in sorted(missing_in_local):
             output.append(f"  - {tag}")
         output.append("")
