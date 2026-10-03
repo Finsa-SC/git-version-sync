@@ -66,6 +66,10 @@ def do_sync(to_git: bool=False, to_config: bool=False, config_name: Path|None=No
         unique_version[get_config_tag(config_path)] = ver
 
     config_tag = max(unique_version.values())
+    if not local_tags:
+        bump_git_tag(config_tag)
+        print(f"Synced version from config file. Created tag: v{config_tag}")
+
     if config_tag == highest_local_tag and len(unique_version) == 1:
         print(f"Already in sync at (v{config_tag})")
         return
