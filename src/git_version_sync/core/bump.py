@@ -158,7 +158,7 @@ def do_bump(request: BumpRequest) -> str:
     if not local_tags and not request.force:
         return (
             f"No local tag found.\n"
-            f"Hint: Run 'git fetch --tags' to sync remote tags, or use '-f' / '--force' to calculate commits from the initial commit."
+            f"Hint: Run 'git-version-sync sync' to create tag 'v1.0.0' from pyproject.toml, or use '-f' / '--force' to calculate bump from the initial commit."
         )
 
     remote_tags = get_remote_tags()
