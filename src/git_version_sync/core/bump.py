@@ -148,13 +148,19 @@ def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
         "Please specify bump type manually."
     )
 
-def do_bump(request: BumpRequest):
+def do_bump(request: BumpRequest) -> str:
     if request.push:
         check_network()
 
     config_version = get_config_version(request.config_path)
 
     local_tags = get_local_tags()
+    if not local_tags and not request.force:
+        return (
+            f"No local tag found.\n"
+            f"Hint: Run 'git fetch --tags' to sync remote tags, or use '-f' / '--force' to calculate commits from the initial commit."
+        )
+
     remote_tags = get_remote_tags()
 
     config_tag = parse_highest_version(set(config_version.values()))

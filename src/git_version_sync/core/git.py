@@ -305,7 +305,7 @@ def get_commit_since_tag(
 
     except subprocess.CalledProcessError as e:
         if base_version:
-            get_commit_since_tag(None, target_reff)
+            return get_commit_since_tag(None, target_reff)
 
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
