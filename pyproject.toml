@@ -27,6 +27,7 @@ Homepage = "https://github.com/Finsa-SC/git-version-sync"
 Repository = "https://github.com/Finsa-SC/git-version-sync"
 Issues = "https://github.com/Finsa-SC/git-version-sync/issues"
 pypi = "https://pypi.org/project/git-version-sync/"
+npm = "https://www.npmjs.com/package/git-version-sync"
 
 [dependency-groups]
 dev = [
