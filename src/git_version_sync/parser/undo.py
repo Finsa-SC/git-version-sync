@@ -11,12 +11,6 @@ def undo_subparse(subparsers, parent_parser):
         help="Specific tag/version to undo (e.g. v1.6.0). Default: latest tag."
     )
     undo_parser.add_argument(
-        "-r",
-        "--remote",
-        action="store_true",
-        help="Also delete the target tag from remote repository if pushed"
-    )
-    undo_parser.add_argument(
         "-f",
         "--force",
         action="store_true",
