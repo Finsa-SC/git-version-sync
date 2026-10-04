@@ -392,4 +392,4 @@ def check_remote_connection(remote_name: str = 'origin', timeout: int = 5):
         raise OSError(
             f"Network error: Unable to reach remote '{remote_name}'. "
             f"Please check your internet connection or repository access rights."
-        )
+        ) from e

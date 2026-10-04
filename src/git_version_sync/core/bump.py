@@ -11,7 +11,7 @@ from .check import parse_highest_version, get_config_tag, get_remote_tags, get_m
     is_all_config_match, get_config_mismatch_str
 from ..config_handlers import get_config_parser
 from ..exception import GitCommandError, ConfigVersionMismatch
-from ..models import BumpRequest, BumpType
+from ..models import BumpRequest, BumpType, UndoRequest
 from ..utils import get_config_version
 
 def bump_config_version(new_version: Version, config_path: Path) -> None:
@@ -57,14 +57,24 @@ def bump_version(
     except Exception as e:
         print(f"\n[!] Error during bump execution: {e}")
         if mutated_local:
-            handle_push_error(f"v{new_version}", config_path)
+            handle_push_error(
+                f"v{new_version}",
+                request.config_path,
+                remote_name=request.remote_name
+            )
         return False
+
     else:
         return True
 
-def handle_push_error(tag_name: str, config_path):
+def handle_push_error(tag_name: str, config_path: Path|None, remote_name: str):
     print(f"[!] Local repository was modified with tag '{tag_name}'.")
-    do_undo(tag_name, remote=True, config_name=config_path)
+    undo_request = UndoRequest(
+        undo_tag=tag_name,
+        remote_name=remote_name,
+        config_name=config_path
+    )
+    do_undo(undo_request)
 
 def format_dry_run_output(request: BumpRequest, new_version: Version, config_version: dict[Path,Version]) -> str:
     config_out = []
