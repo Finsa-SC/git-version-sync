@@ -3,7 +3,8 @@ from packaging.version import Version
 
 from .bump import bump_config_version, bump_git_tag
 from .check import get_config_tag, parse_highest_version, is_all_config_match
-from .git import fetch_remote_tags, is_branch_behind_remote, get_local_tags, check_remote_connection
+from .git import fetch_remote_tags, is_branch_behind_remote, get_local_tags, check_remote_connection, has_remote
+from ..exception import GitRemoteError
 from ..models import SyncRequest
 from ..utils import get_config_version
 
@@ -46,8 +47,15 @@ def sync_version(
         print(f"Synced workspace to highest version v{target_version}")
 
 def do_sync(request: SyncRequest) -> None:
-    check_remote_connection(request.remote_name)
-    fetch_remote_tags(request.remote_name)
+    remote_name = request.remote_name if request.remote_name else "origin"
+    if not has_remote(remote_name):
+        raise GitRemoteError(
+            f"Git remote '{remote_name}' was not found.\n"
+            f"Hint: Run 'git remote -v' to view existing remotes, or add it using 'git remote add {remote_name} <url>'."
+        )
+
+    check_remote_connection(remote_name)
+    fetch_remote_tags(remote_name)
 
     if is_branch_behind_remote():
         raise RuntimeError(

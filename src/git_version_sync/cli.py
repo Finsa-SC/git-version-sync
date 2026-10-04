@@ -26,10 +26,10 @@ def main():
 
             case 'sync':
                 sync_request = SyncRequest(
-                    to_git      =args.to_git,
-                    to_config   =args.to_config,
-                    config_name =args.config,
-                    remote_name =args.remote,
+                    to_git      = args.to_git,
+                    to_config   = args.to_config,
+                    config_name = args.config,
+                    remote_name = args.remote,
                 )
                 do_sync(
                     sync_request

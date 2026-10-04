@@ -13,7 +13,7 @@ wheels = [
 
 [[package]]
 name = "git-version-sync"
-version = "1.14.2"
+version = "1.15.1"
 source = { editable = "." }
 dependencies = [
     { name = "packaging" },
