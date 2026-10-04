@@ -372,3 +372,24 @@ def has_remote(remote_name: str = 'origin') -> bool:
 
     except (subprocess.CalledProcessError, FileNotFoundError):
         return False
+
+def check_remote_connection(remote_name: str = 'origin', timeout: int = 5):
+    command = ["git", "ls-remote", "--exit-code", "-h", remote_name]
+
+    try:
+        subprocess.run(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            capture_output=True,
+            timeout=timeout,
+            check=True
+        )
+
+    except subprocess.TimeoutExpired:
+        raise GitRemoteError(f"Network error: Connection to remote '{remote_name}' timed out.")
+    except subprocess.CalledProcessError as e:
+        raise OSError(
+            f"Network error: Unable to reach remote '{remote_name}'. "
+            f"Please check your internet connection or repository access rights."
+        )

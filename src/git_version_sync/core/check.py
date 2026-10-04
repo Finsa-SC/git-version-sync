@@ -3,8 +3,7 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.config_handlers import get_config_parser
-from git_version_sync.core.git import get_remote_tags, fetch_remote_tags, get_local_tags
-from git_version_sync.networks import check_network
+from git_version_sync.core.git import get_remote_tags, fetch_remote_tags, get_local_tags, check_remote_connection
 from git_version_sync.utils import get_config_version
 
 def parse_highest_version(tags: set[str|Version]) -> Version | None:
@@ -87,7 +86,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
         else:
             return get_config_mismatch_str(config_version, highest_local_version)
 
-    check_network()
+    check_remote_connection(remote_name)
     fetch_remote_tags()
 
     remote_tags = get_remote_tags(remote_name)

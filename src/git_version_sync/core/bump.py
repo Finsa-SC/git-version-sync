@@ -6,13 +6,12 @@ from packaging.version import Version
 from .undo import do_undo
 from .changelog import generate_changelog
 from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error, \
-    bump_git_tag, get_local_tags
+    bump_git_tag, get_local_tags, check_remote_connection
 from .check import parse_highest_version, get_config_tag, get_remote_tags, get_missing_local_tags, \
     is_all_config_match, get_config_mismatch_str
 from ..config_handlers import get_config_parser
 from ..exception import GitCommandError, ConfigVersionMismatch
 from ..models import BumpRequest, BumpType
-from ..networks import check_network
 from ..utils import get_config_version
 
 def bump_config_version(new_version: Version, config_path: Path) -> None:
@@ -150,7 +149,7 @@ def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
 
 def do_bump(request: BumpRequest) -> str:
     if request.push:
-        check_network()
+        check_remote_connection(request.remote_name)
 
     config_version = get_config_version(request.config_path)
 
