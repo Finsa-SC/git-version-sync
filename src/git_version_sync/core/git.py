@@ -392,3 +392,40 @@ def check_remote_connection(remote_name: str = 'origin', timeout: int = 5) -> No
             f"Network error: Unable to reach remote '{remote_name}'. "
             f"Please check your internet connection or repository access rights."
         ) from e
+
+def get_tag_commit_hash(tag_name: str, remote_name: str|None = None) -> str:
+
+    # Try to get remote last tag if use remote flag
+    if remote_name is not None:
+        try:
+            command = ["git", "ls-remote", remote_name, f"refs/tags/{tag_name}^{{}}", f"refs/tags/{tag_name}"]
+
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            first_line = result.stdout.strip().splitlines()[0]
+            commit_hash = first_line.split()[0]
+
+            return commit_hash
+
+        except subprocess.CalledProcessError:
+            ...
+
+    # get local commit tag
+    try:
+        command = ['git', 'rev-parse', f'{tag_name}^{{commit}}']
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
