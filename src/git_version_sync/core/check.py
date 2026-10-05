@@ -3,7 +3,7 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.config_handlers import get_config_parser
-from git_version_sync.core.git import get_remote_tags, fetch_remote_tags, get_local_tags, check_remote_connection
+from git_version_sync.core.git import get_remote_tags, get_local_tags, check_remote_connection
 from git_version_sync.utils import get_config_version
 
 def parse_highest_version(tags: set[str|Version]) -> Version | None:
@@ -121,7 +121,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     ## Warning and hint if local and remote tag is not valid
     if missing_in_local:
         output.append(
-            f"Warning: Local version is behind remote."
+            f"\nWarning: Local version is behind remote."
             f"\nHint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes."
         )
     elif missing_in_remote:

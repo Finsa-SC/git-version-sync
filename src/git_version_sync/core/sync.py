@@ -19,13 +19,13 @@ def sync_version(
         if highest_local_tag:
             for config_path in config_version.keys():
                 bump_config_version(highest_local_tag, config_path)
-                print(f"Synced {config_path.name} version to match Git tag v{highest_local_tag}")
+                print(f"Synced {config_path.name} version to match Git tag v{highest_local_tag}.")
         else:
             raise RuntimeError("No git tag found on local.")
 
     elif request.to_config and highest_local_tag:
-        bump_git_tag(config_tag, message=f"Sync git tag to v{config_tag}")
-        print(f"Synced Git tag to match config version v{config_tag}")
+        bump_git_tag(config_tag, message=f"Sync git tag to v{config_tag}.")
+        print(f"Synced Git tag to match config version v{config_tag}.")
 
     else:
         if highest_local_tag:
@@ -33,35 +33,38 @@ def sync_version(
         else:
             target_version = config_tag
 
-        all_match = is_all_config_match(config_version)
-        if highest_local_tag and (not all_match or highest_local_tag > config_tag):
+        all_config_match = is_all_config_match(config_version)
+        if highest_local_tag and (not all_config_match or highest_local_tag > config_tag):
             for config_path in config_version.keys():
                 bump_config_version(target_version, config_path)
+                print(f"Synced {config_path.name} version to match v{target_version}.")
 
         elif highest_local_tag and highest_local_tag < config_tag:
             bump_git_tag(target_version)
+            print(f"Synced Git tag to match with v{target_version}.")
 
         else:
             return
 
-        print(f"Synced workspace to highest version v{target_version}")
+        print(f"\nSynced workspace to highest version v{target_version}.")
 
 def do_sync(request: SyncRequest) -> None:
-    remote_name = request.remote_name if request.remote_name else "origin"
-    if not has_remote(remote_name):
-        raise GitRemoteError(
-            f"Git remote '{remote_name}' was not found.\n"
-            f"Hint: Run 'git remote -v' to view existing remotes, or add it using 'git remote add {remote_name} <url>'."
-        )
+    ## Auto fetch git tag If using remote argument
+    if request.remote_name is not None:
+        if not has_remote(request.remote_name):
+            raise GitRemoteError(
+                f"Git remote '{request.remote_name}' was not found.\n"
+                f"Hint: Run 'git remote -v' to view existing remotes, or add it using 'git remote add {request.remote_name} <url>'."
+            )
 
-    check_remote_connection(remote_name)
-    fetch_remote_tags(remote_name)
+        check_remote_connection(request.remote_name)
+        fetch_remote_tags(request.remote_name)
 
-    if is_branch_behind_remote():
-        raise RuntimeError(
-            "Your branch is behind remote commits. "
-            "Please run `git pull` first before syncing version"
-        )
+        if is_branch_behind_remote():
+            raise RuntimeError(
+                "Your branch is behind remote commits. "
+                "Please run `git pull` first before syncing version"
+            )
 
     config_list = get_config_version(request.config_name)
     local_tags = get_local_tags()
@@ -79,8 +82,9 @@ def do_sync(request: SyncRequest) -> None:
         print(f"Synced version from config file. Created tag: v{config_tag}")
         return
 
-    if config_tag == highest_local_tag and len(unique_version) == 1:
+    elif config_tag == highest_local_tag and len(unique_version) == 1:
         print(f"Already in sync at (v{config_tag})")
         return
 
-    sync_version(request, highest_local_tag, config_tag, config_list)
+    else:
+        sync_version(request, highest_local_tag, config_tag, config_list)
