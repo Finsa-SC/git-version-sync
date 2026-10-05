@@ -429,3 +429,18 @@ def get_tag_commit_hash(tag_name: str, remote_name: str|None = None) -> str:
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
+
+def is_commit_in_local(commit_hash: str) -> bool:
+    command = ['git', 'cat-file', '-e', commit_hash]
+
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        return True
+    except subprocess.CalledProcessError:
+        return False
