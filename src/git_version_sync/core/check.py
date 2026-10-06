@@ -18,7 +18,7 @@ def parse_highest_version(tags: set[str|Version]) -> Version | None:
         except Exception:
             continue
 
-    return max(valid_version) if valid_version else None
+    return max(valid_version, key=lambda ver: Version(ver.lstrip("v"))) if valid_version else None
 
 def get_config_tag(config_path: Path) -> Version:
     config_parser = get_config_parser(config_path)
@@ -26,12 +26,12 @@ def get_config_tag(config_path: Path) -> Version:
 
     return config_tag
 
-def get_missing_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
+def get_missing_in_local_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
     missing_in_local = remote_tags - local_tags
 
     return missing_in_local
 
-def get_missing_remote_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
+def get_missing_in_remote_tags(remote_tags: set[str], local_tags: set[str]) -> set[str]:
     missing_in_remote = local_tags - remote_tags
 
     return missing_in_remote
@@ -94,8 +94,8 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
 
     highest_remote = parse_highest_version(remote_tags)
 
-    missing_in_local = get_missing_local_tags(remote_tags, local_tags)
-    missing_in_remote = get_missing_remote_tags(remote_tags, local_tags)
+    missing_in_local = get_missing_in_local_tags(remote_tags, local_tags)
+    missing_in_remote = get_missing_in_remote_tags(remote_tags, local_tags)
 
     if highest_local_version == config_tag:
         output.append(f"Version ({config_tag}) is synchronized with local tag 'v{config_tag}'.")
