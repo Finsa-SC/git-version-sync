@@ -11,6 +11,7 @@ class YamlConfigParser(BaseConfigParser):
         self._data = self._load_yaml()
         self.possible_keys = [
             # Tool & Project Scopes
+            ("x-project", "version"),
             ("git-version-sync", "version"),
             ("tool", "git-version-sync", "version"),
             ("package", "version"),
