@@ -2,9 +2,16 @@ from pathlib import Path
 from packaging.version import Version
 
 from .bump import bump_config_version, bump_git_tag
-from .check import get_config_tag, parse_highest_version, is_all_config_match, get_missing_in_local_tags
-from .git import fetch_remote_tags, is_branch_behind_remote, get_local_tags, check_remote_connection, has_remote, \
-    get_remote_tags, get_tag_commit_hash, is_commit_in_current_branch
+from .check import get_config_tag, parse_highest_version, is_all_config_match
+from .git import (
+    fetch_remote_tags,
+    get_local_tags,
+    check_remote_connection,
+    has_remote,
+    get_remote_tags,
+    get_remote_tag_commit_hash,
+    is_commit_in_current_branch, get_tag_commit_hash
+)
 from ..exception import GitRemoteError, ConfigFileVersionError
 from ..models import SyncRequest
 from ..utils import get_config_version
@@ -51,44 +58,39 @@ def sync_version(
 
 def sync_remote(remote_name: str) -> None:
     # Validate remote
+    check_remote_connection(remote_name)
     if not has_remote(remote_name):
         raise GitRemoteError(
             f"Git remote '{remote_name}' was not found.\n"
             f"Hint: Run 'git remote -v' to view existing remotes, or add it using 'git remote add {remote_name} <url>'."
         )
-    check_remote_connection(remote_name)
-    fetch_remote_tags(remote_name)
-
-    if is_branch_behind_remote():
-        raise RuntimeError(
-            "Your branch is behind remote commits. "
-            "Please run `git pull` first before syncing version"
-        )
 
     # Is remote tag missing in local?
-    remote_tags = get_remote_tags(remote_name)
-    if not remote_tags:
-        return
-
-    local_tags = get_local_tags()
-    missing_in_local = get_missing_in_local_tags(remote_tags, local_tags)
-
     # If highest remote tag already in local, no need to sync
-    highest_remote_tag = parse_highest_version(remote_tags)
+    remote_tags = get_remote_tags(remote_name)
+    highest_remote_tag = parse_highest_version(remote_tags) if remote_tags else None
     if not highest_remote_tag:
         return
 
-    if missing_in_local and highest_remote_tag in local_tags:
-        return
-
+    local_tags = get_local_tags()
     tag_name = f"v{highest_remote_tag}"
-    commit_hash = get_tag_commit_hash(tag_name)
+    in_local = tag_name in local_tags
+
+    commit_hash = (
+        get_tag_commit_hash(tag_name) if in_local
+        else get_remote_tag_commit_hash(tag_name, remote_name)
+    )
+
     if not is_commit_in_current_branch(commit_hash):
         raise RuntimeError(
             f"Error: Commit '{commit_hash[:7]}' associated with tag '{tag_name}' "
             f"is not integrated into your current branch.\n"
             f"Hint: Please run 'git pull' or merge the target branch before syncing version."
         )
+
+    if not in_local:
+        fetch_remote_tags(remote_name)
+
 
 def do_sync(request: SyncRequest) -> None:
     ## Auto fetch git tag If using remote argument

@@ -7,7 +7,7 @@ from git_version_sync.core.git import get_remote_tags, get_local_tags, check_rem
 from git_version_sync.utils import get_config_version
 
 def parse_highest_version(tags: set[str|Version]) -> Version | None:
-    valid_version = []
+    valid_version: list[Version] = []
     for tag in tags:
         try:
             if isinstance(tag, str):
@@ -18,7 +18,7 @@ def parse_highest_version(tags: set[str|Version]) -> Version | None:
         except Exception:
             continue
 
-    return max(valid_version, key=lambda ver: Version(ver.lstrip("v"))) if valid_version else None
+    return max(valid_version, key=lambda ver: ver) if valid_version else None
 
 def get_config_tag(config_path: Path) -> Version:
     config_parser = get_config_parser(config_path)
