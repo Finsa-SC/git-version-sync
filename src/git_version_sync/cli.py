@@ -1,6 +1,6 @@
 import sys
 
-from git_version_sync.exception import GitCommandError, GitVersionSyncError
+from git_version_sync.exception import GitVersionSyncError
 from git_version_sync.models import BumpRequest, SyncRequest, PushRequest, UndoRequest
 from .builder import create_parser
 from .core import do_check, do_bump, do_sync, do_push, do_undo

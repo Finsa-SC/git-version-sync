@@ -1,8 +1,15 @@
 from packaging.version import Version
 
 from .changelog import generate_changelog
-from .check import get_remote_tags, parse_highest_version
-from .git import push_to_remote, fetch_remote_tags, get_commit_since_tag, create_github_release, get_local_tags
+from .check import get_remote_tags, parse_highest_version, get_missing_in_remote_tags
+from .git import (
+    push_to_remote,
+    fetch_remote_tags,
+    get_commit_since_tag,
+    create_github_release,
+    get_local_tags
+)
+from ..exception import GitPushError
 from ..models import PushRequest
 
 
@@ -28,41 +35,56 @@ def do_push(request: PushRequest):
 
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
-    unpush_tags = local_tags - remote_tags
+    unpush_tags = get_missing_in_remote_tags(remote_tags, local_tags)
     latest_tags = parse_highest_version(local_tags)
 
-    tags_to_push: list[Version] = []
 
     if latest_tags is None:
-        raise RuntimeError("Failed to push to remote, No local tag found.")
+        raise GitPushError("Failed to push to remote, No local tag found.")
 
+    pending_tags: list[Version] = []
+    # If using --all flag
     if request.push_all:
-        tags_to_push.extend(Version(ver) for ver in unpush_tags)
+        pending_tags.extend(Version(ver) for ver in unpush_tags)
 
+    # If user input tag(s) manually
     elif request.tags:
-        tags_to_push.extend(Version(ver) for ver in request.tags if ver in unpush_tags)
+        invalid_tags = set(request.tags) - unpush_tags
 
+        # Validate invalid tags
+        is_valid = len(invalid_tags) > 0
+        if is_valid:
+            raise GitPushError(
+                f"Error: Tag(s) not found locally: {', '.join(invalid_tags)}\n"
+                f"Nothing was pushed."
+            )
+
+        pending_tags.extend(Version(ver) for ver in request.tags if ver in unpush_tags)
+
+    # If user doesn't input any tag, auto use latest lag
     elif f"v{latest_tags}" in unpush_tags:
-        tags_to_push.append(latest_tags)
+        pending_tags.append(latest_tags)
 
-    # Check missing tags
-    if not tags_to_push:
-        print(f"Everything up-to-date at tag v{latest_tags}")
+    if not pending_tags:
+        if request.tags:
+            print(f"Already on {remote_name}: {', '.join(request.tags)}")
+        else:
+            print(f"Nothing to push: all local tags already exist on {remote_name}.")
         return
 
-    tags_to_push.sort()
+    pending_tags.sort()
 
-    print(f"Pushing tag(s) to remote: {', '.join(f'v{ver}' for ver in tags_to_push)}")
-    push_to_remote(tags_to_push, remote_name)
+    print(f"Pushing tag(s) to remote: {', '.join(f'v{ver}' for ver in pending_tags)}")
+    push_to_remote(pending_tags, remote_name)
 
-    number_of_tag = len(tags_to_push)
+    number_of_tag = len(pending_tags)
     if number_of_tag > 1:
         print(f"Pushed: {number_of_tag} tags to origin.")
     else:
-        print(f"Pushed: {tags_to_push[0]} -> origin.")
+        print(f"Pushed: {pending_tags[0]} -> origin.")
 
     if request.release is not None:
-        for target_version in tags_to_push:
+        for target_version in pending_tags:
             if request.release.strip():
                 change_log = request.release
             else:
