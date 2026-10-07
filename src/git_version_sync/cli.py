@@ -73,6 +73,8 @@ def main():
     except GitVersionSyncError as e:
         print(f"{e}", file=sys.stderr)
         sys.exit(1)
+    except KeyboardInterrupt:
+        sys.exit(130)
     except Exception:
         raise
 
