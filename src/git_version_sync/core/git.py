@@ -1,8 +1,10 @@
+import os
 import subprocess, shutil
 from pathlib import Path
 from packaging.version import Version
 
-from git_version_sync.exception import GitCommandError, GitPushError
+from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteError
+
 
 def commit_config_change(new_version: Version, config_version: dict[Path,Version]) -> None:
     if not config_version:
@@ -31,11 +33,11 @@ def commit_config_change(new_version: Version, config_version: dict[Path,Version
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Git commit failed: \n{error_msg}") from e
 
-def push_to_remote(new_version: list[Version]|Version) -> None:
+def push_to_remote(new_version: list[Version]|Version, remote_name: str = 'origin') -> None:
     try:
         command = [
             'git', 'push',
-            'origin', 'HEAD',
+            remote_name, 'HEAD',
         ]
 
         if isinstance(new_version, Version):
@@ -54,10 +56,16 @@ def push_to_remote(new_version: list[Version]|Version) -> None:
         error_msg = clean_git_error(e)
         raise GitPushError(f"Failed to push to remote: \n{error_msg}") from e
 
-def fetch_remote_tags():
+def fetch_remote_tags(remote_name: str = 'origin'):
+    # Validate git structure
     get_git_path()
+    if not has_remote(remote_name):
+        raise GitRemoteError(
+            f"Remote '{remote_name}' not found.\n"
+            f"Hint: Add a remote using 'git remote add {remote_name} <url>'"
+        )
 
-    command = ['git', 'fetch', '--tags', 'origin']
+    command = ['git', 'fetch', '--tags', remote_name]
 
     try:
         subprocess.run(
@@ -109,8 +117,8 @@ def delete_tag(version: Version) -> None:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
 
-def delete_remote_tag(version: Version) -> None:
-    command = ['git', 'push', 'origin', '--delete', f"v{version}"]
+def delete_remote_tag(version: Version, remote_name: str) -> None:
+    command = ['git', 'push', remote_name, '--delete', f"v{version}"]
 
     try:
         subprocess.run(
@@ -203,7 +211,13 @@ def get_git_path() -> Path:
 
     return Path(result.stdout.strip())
 
-def get_remote_tags() -> set[str]:
+def get_remote_tags(remote_name: str = 'origin') -> set[str]:
+    if not has_remote(remote_name):
+        raise GitRemoteError(
+            f"No remote repository found for {remote_name}.\n"
+            f"Hint: Connect a remote repository first using 'git remote add {remote_name} <url>' or list existing remotes with 'git remote -v'."
+        )
+
     command = ['git', 'ls-remote', '--tags', 'origin']
     result = subprocess.run(
         command,
@@ -292,7 +306,7 @@ def get_commit_since_tag(
 
     except subprocess.CalledProcessError as e:
         if base_version:
-            get_commit_since_tag(None, target_reff)
+            return get_commit_since_tag(None, target_reff)
 
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
@@ -339,3 +353,107 @@ def get_local_tags() -> set[str]:
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
+
+def has_remote(remote_name: str = 'origin') -> bool:
+    command = ['git', 'remote']
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        remotes = [rmt.strip() for rmt in result.stdout.splitlines()]
+        if remote_name == 'origin':
+            return len(remotes) >= 1
+        else:
+            return remote_name in remotes
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        return False
+
+def check_remote_connection(remote_name: str = 'origin', timeout: int = 5) -> None:
+    command = ["git", "ls-remote",  remote_name, 'HEAD']
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
+
+    try:
+        subprocess.run(
+            command,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=timeout,
+            check=True,
+            env=env
+        )
+
+    except subprocess.TimeoutExpired:
+        raise GitRemoteError(
+            f"Connection to remote '{remote_name}' timed out after {timeout}s."
+        )
+    except subprocess.CalledProcessError as e:
+        raise GitRemoteError(
+            f"Unable to reach remote '{remote_name}': {clean_git_error(e)}"
+        ) from e
+
+def get_remote_tag_commit_hash(tag_name: str, remote_name: str = 'origin') -> str:
+    try:
+        command = ['git', 'ls-remote', '--tags', remote_name, f"refs/tags/{tag_name}", f"refs/tags/{tag_name}^{{}}"]
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        direct = peeled = None
+        for line in result.stdout.strip().splitlines():
+            sha, name = line.split('\t')
+            if name.endswith("^{}"):
+                peeled = sha
+            else:
+                direct = sha
+
+        commit = peeled or direct
+        if not commit:
+            raise GitCommandError(f"Tag '{tag_name}' not found on '{remote_name}'.")
+
+        return commit
+
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to read tag '{tag_name}' from '{remote_name}': {error_msg}") from e
+
+def get_tag_commit_hash(tag_name: str) -> str:
+    try:
+        command = ['git', 'rev-parse', f'{tag_name}^{{commit}}']
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return result.stdout.strip()
+
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"Failed to resolve commit for tag '{tag_name}': {error_msg}") from e
+
+def is_commit_in_current_branch(commit_hash: str) -> bool:
+    command = ['git', 'merge-base', '--is-ancestor', commit_hash, 'HEAD']
+
+    try:
+        subprocess.run(
+            command,
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+
+        return True
+    except subprocess.CalledProcessError:
+        return False

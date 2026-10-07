@@ -25,3 +25,5 @@ def push_subparse(subparsers, parent_parser):
         metavar="NOTES",
         help="Create a GitHub release for the bumped version (requires 'gh' CLI)"
     )
+
+    push_parser.set_defaults(_parser=push_parser)

@@ -14,11 +14,20 @@ def create_parser():
         metavar="PATH",
         help="Path to a custom configuration file (e.g. pyproject.toml, Cargo.toml, package.json)"
     )
+    parent_parser.add_argument(
+        "-R",
+        "--remote",
+        nargs="?",
+        type=str,
+        const="origin",
+        default=None,
+        metavar="REMOTE",
+        help="Target Git remote repository name (default if flag used: origin)"
+    )
 
     parser = argparse.ArgumentParser(
         prog="git-version-sync",
         description="Sync Git tags and project config versions.",
-        parents=[parent_parser]
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)

@@ -1,19 +1,30 @@
-import re
 from pathlib import Path
-
 from packaging.version import Version
 
+from .bump_detection import detect_bump_type, calculate_next_version
 from .undo import do_undo
 from .changelog import generate_changelog
-from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error, \
-    bump_git_tag, get_local_tags
-from .check import parse_highest_version, get_config_tag, get_remote_tags, get_missing_local_tags, \
-    is_all_config_match, get_config_mismatch_str
+from .git import (
+    commit_config_change,
+    push_to_remote,
+    create_github_release,
+    get_commit_since_tag,
+    bump_git_tag,
+    get_local_tags,
+    check_remote_connection
+)
+from .check import (
+    parse_highest_version,
+    get_remote_tags,
+    get_missing_in_local_tags,
+    is_all_config_match,
+    get_config_mismatch_str
+)
 from ..config_handlers import get_config_parser
 from ..exception import GitCommandError, ConfigVersionMismatch
-from ..models import BumpRequest, BumpType
-from ..networks import check_network
+from ..models import BumpRequest, UndoRequest
 from ..utils import get_config_version
+
 
 def bump_config_version(new_version: Version, config_path: Path) -> None:
     config_parser = get_config_parser(config_path)
@@ -58,14 +69,24 @@ def bump_version(
     except Exception as e:
         print(f"\n[!] Error during bump execution: {e}")
         if mutated_local:
-            handle_push_error(f"v{new_version}", config_path)
+            handle_push_error(
+                f"v{new_version}",
+                request.config_path,
+                remote_name=request.remote_name
+            )
         return False
+
     else:
         return True
 
-def handle_push_error(tag_name: str, config_path):
+def handle_push_error(tag_name: str, config_path: Path|None, remote_name: str):
     print(f"[!] Local repository was modified with tag '{tag_name}'.")
-    do_undo(tag_name, remote=True, config_name=config_path)
+    undo_request = UndoRequest(
+        undo_tag=tag_name,
+        remote_name=remote_name,
+        config_name=config_path
+    )
+    do_undo(undo_request)
 
 def format_dry_run_output(request: BumpRequest, new_version: Version, config_version: dict[Path,Version]) -> str:
     config_out = []
@@ -76,7 +97,7 @@ def format_dry_run_output(request: BumpRequest, new_version: Version, config_ver
     output: list[str] = [
         f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
         f"{config_out_str}"
-        f"Would create Git tag v{new_version} (DRY RUN)",
+        f"\nWould create Git tag v{new_version} (DRY RUN)",
     ]
 
     if request.push:
@@ -89,72 +110,19 @@ def format_dry_run_output(request: BumpRequest, new_version: Version, config_ver
 
     return "\n".join(output)
 
-def get_new_major(version: Version) -> str:
-    return f"{version.major + 1}.0.0"
-
-def get_new_minor(version: Version) -> str:
-    return f"{version.major}.{version.minor + 1}.0"
-
-def get_new_patch(version: Version):
-    return f"{version.major}.{version.minor}.{version.micro + 1}"
-
-def calculate_next_version(base_version: Version, bump_type: BumpType) -> str:
-    match bump_type:
-        case "major":
-            return get_new_major(base_version)
-        case "minor":
-            return get_new_minor(base_version)
-        case "patch":
-            return get_new_patch(base_version)
-
-def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
-    # Regex String Patterns
-    pat_major = r"(BREAKING[ -]CHANGE:|^\w+(\([\w\.-]+\))?!:)"
-    pat_minor = r"^feat(\([\w\.-]+\))?:"
-    pat_patch = r"^fix(\([\w\.-]+\))?:"
-
-    major_count = 0
-    minor_count = 0
-    patch_count = 0
-
-    for commit in get_commit_since_tag(base_version):
-        commit_str = commit['message'].strip()
-        if not commit_str:
-            continue
-
-        if re.search(pat_major, commit_str, re.MULTILINE):
-            major_count += 1
-
-        elif re.search(pat_minor, commit_str, re.MULTILINE):
-            minor_count += 1
-
-        elif re.search(pat_patch, commit_str, re.MULTILINE):
-            patch_count += 1
-
-    if major_count > 0:
-        reason = f"Detected {major_count} BREAKING CHANGE commit(s) since v{base_version}"
-        return "major", reason
-
-    if minor_count > 0:
-        reason = f"Detected {minor_count} 'feat' commit(s) since v{base_version}"
-        return "minor", reason
-
-    if patch_count > 0:
-        reason = f"Detected {patch_count} 'fix' commit(s) since v{base_version}"
-        return "patch", reason
-
-    raise RuntimeError(
-        "No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). "
-        "Please specify bump type manually."
-    )
-
-def do_bump(request: BumpRequest):
+def do_bump(request: BumpRequest) -> str:
     if request.push:
-        check_network()
+        check_remote_connection(request.remote_name)
 
     config_version = get_config_version(request.config_path)
 
     local_tags = get_local_tags()
+    if not local_tags and not request.force:
+        return (
+            f"No local tag found.\n"
+            f"Hint: Run 'git-version-sync sync' to create tag 'v1.0.0' from pyproject.toml, or use '-f' / '--force' to calculate bump from the initial commit."
+        )
+
     remote_tags = get_remote_tags()
 
     config_tag = parse_highest_version(set(config_version.values()))
@@ -168,7 +136,7 @@ def do_bump(request: BumpRequest):
             f"Run `git-version-sync sync` first or use `--force` to bypass."
         )
 
-    missing_in_local = get_missing_local_tags(remote_tags, local_tags)
+    missing_in_local = get_missing_in_local_tags(remote_tags, local_tags)
     if missing_in_local and not request.force:
         missing_str = ", ".join(f"{ver}" for ver in missing_in_local)
         raise GitCommandError(
