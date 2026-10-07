@@ -5,10 +5,22 @@ from packaging.version import Version
 
 from .undo import do_undo
 from .changelog import generate_changelog
-from .git import commit_config_change, push_to_remote, create_github_release, get_commit_since_tag, clean_git_error, \
-    bump_git_tag, get_local_tags, check_remote_connection
-from .check import parse_highest_version, get_config_tag, get_remote_tags, get_missing_in_local_tags, \
-    is_all_config_match, get_config_mismatch_str
+from .git import (
+    commit_config_change,
+    push_to_remote,
+    create_github_release,
+    get_commit_since_tag,
+    bump_git_tag,
+    get_local_tags,
+    check_remote_connection
+)
+from .check import (
+    parse_highest_version,
+    get_remote_tags,
+    get_missing_in_local_tags,
+    is_all_config_match,
+    get_config_mismatch_str
+)
 from ..config_handlers import get_config_parser
 from ..exception import GitCommandError, ConfigVersionMismatch
 from ..models import BumpRequest, BumpType, UndoRequest
@@ -85,7 +97,7 @@ def format_dry_run_output(request: BumpRequest, new_version: Version, config_ver
     output: list[str] = [
         f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
         f"{config_out_str}"
-        f"Would create Git tag v{new_version} (DRY RUN)",
+        f"\nWould create Git tag v{new_version} (DRY RUN)",
     ]
 
     if request.push:
