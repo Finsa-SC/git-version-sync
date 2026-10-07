@@ -25,7 +25,7 @@ from git_version_sync.core.git import (
 )
 
 # Custom exceptions
-from git_version_sync.exception import GitCommandError, GitPushError
+from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteError
 
 # Target modul config_handler & utils
 from git_version_sync.config_handlers import (
@@ -37,6 +37,10 @@ from git_version_sync.config_handlers import (
     XmlConfigParser,
 )
 from git_version_sync.utils import get_config_version
+
+# Target modul sync
+from git_version_sync.core.sync import sync_remote, do_sync
+from git_version_sync.models import SyncRequest
 
 
 @pytest.fixture
@@ -101,7 +105,8 @@ class TestGetConfigPath:
     def test_auto_detect_pyproject(self, temp_git_repo):
         """Harus mendeteksi pyproject.toml secara otomatis jika ada."""
         config_paths = get_config_version()
-        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in
+                                                                                                   config_paths]
         assert "pyproject.toml" in path_names
 
     def test_auto_detect_package_json(self, temp_git_repo):
@@ -110,7 +115,8 @@ class TestGetConfigPath:
         Path("package.json").write_text('{\n  "name": "test",\n  "version": "1.0.0"\n}\n')
 
         config_paths = get_config_version()
-        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in
+                                                                                                   config_paths]
         assert "package.json" in path_names
 
     def test_auto_detect_multiple_configs(self, temp_git_repo):
@@ -122,7 +128,8 @@ class TestGetConfigPath:
         Path("docker-compose.yaml").write_text('version: "1.0.0"\nservices:\n  app:\n    image: test:1.0.0\n')
 
         config_paths = get_config_version()
-        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in
+                                                                                                   config_paths]
         assert "package.json" in path_names
         assert "docker-compose.yaml" in path_names
 
@@ -132,7 +139,8 @@ class TestGetConfigPath:
         custom_file.write_text('{"version": "1.0.0"}')
 
         config_paths = get_config_version(custom_file)
-        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in config_paths]
+        path_names = [p.name for p in config_paths.keys()] if isinstance(config_paths, dict) else [p.name for p in
+                                                                                                   config_paths]
         assert "custom_config.json" in path_names
 
     def test_custom_config_not_found(self, temp_git_repo):
@@ -305,7 +313,7 @@ class TestDeleteRemoteTag:
         """Harus memanggil command git push origin --delete secara tepat."""
         mock_run.return_value = MagicMock(returncode=0)
 
-        delete_remote_tag(Version("1.0.0"))
+        delete_remote_tag(Version("1.0.0"), "origin")
 
         call_args = mock_run.call_args_list[0][0][0]
         assert "git" in call_args
@@ -321,7 +329,7 @@ class TestDeleteRemoteTag:
             1, "git push", stderr="remote ref does not exist"
         )
         with pytest.raises(GitCommandError):
-            delete_remote_tag(Version("99.0.0"))
+            delete_remote_tag(Version("99.0.0"), "origin")
 
 
 class TestGetTagCommit:
@@ -414,6 +422,7 @@ class TestGetRemoteTags:
     @patch("subprocess.run")
     def test_get_remote_tags_success(self, mock_run):
         """Harus mem-parse daftar tag dari remote secara presisi."""
+
         def side_effect(cmd, *args, **kwargs):
             if cmd == ["git", "remote"]:
                 return MagicMock(returncode=0, stdout="origin\n")
@@ -431,6 +440,7 @@ class TestGetRemoteTags:
     @patch("subprocess.run")
     def test_get_remote_tags_empty(self, mock_run):
         """Harus mengembalikan set kosong jika tidak ada tag di remote."""
+
         def side_effect(cmd, *args, **kwargs):
             if cmd == ["git", "remote"]:
                 return MagicMock(returncode=0, stdout="origin\n")
@@ -444,6 +454,7 @@ class TestGetRemoteTags:
     @patch("subprocess.run")
     def test_get_remote_tags_filters_deref(self, mock_run):
         """Harus membuang entri dereference tag annotated (^{})."""
+
         def side_effect(cmd, *args, **kwargs):
             if cmd == ["git", "remote"]:
                 return MagicMock(returncode=0, stdout="origin\n")
@@ -502,6 +513,7 @@ class TestFetchRemoteTags:
     @patch("subprocess.run")
     def test_fetch_remote_tags_success(self, mock_run):
         """Harus berhasil mengambil tag dari remote."""
+
         def side_effect(cmd, *args, **kwargs):
             if cmd == ["git", "remote"]:
                 return MagicMock(returncode=0, stdout="origin\n")
@@ -609,6 +621,52 @@ class TestIsBranchBehindRemote:
         with pytest.raises(GitCommandError, match="Failed to check branch status"):
             is_branch_behind_remote()
 
+
+class TestSyncRemote:
+    """Test suite untuk validasi alur sync_remote."""
+
+    @patch("git_version_sync.core.sync.has_remote")
+    def test_sync_remote_invalid_remote_raises_error(self, mock_has_remote):
+        mock_has_remote.return_value = False
+        with pytest.raises(GitRemoteError, match="was not found"):
+            sync_remote("origin")
+
+    @patch("git_version_sync.core.sync.has_remote")
+    @patch("git_version_sync.core.sync.check_remote_connection")
+    @patch("git_version_sync.core.sync.get_remote_tags")
+    def test_sync_remote_empty_remote_tags_returns_early(
+            self, mock_get_tags, mock_check, mock_has
+    ):
+        mock_has.return_value = True
+        mock_get_tags.return_value = set()
+
+        # Harus return bersih tanpa melempar exception
+        sync_remote("origin")
+        mock_check.assert_called_once_with("origin")
+
+    @patch("git_version_sync.core.sync.has_remote")
+    @patch("git_version_sync.core.sync.check_remote_connection")
+    @patch("git_version_sync.core.sync.get_remote_tags")
+    @patch("git_version_sync.core.sync.get_local_tags")
+    @patch("git_version_sync.core.sync.get_remote_tag_commit_hash")
+    @patch("git_version_sync.core.sync.is_commit_in_current_branch")
+    def test_sync_remote_unintegrated_commit_raises_error(
+            self,
+            mock_is_ancestor,
+            mock_get_remote_hash,
+            mock_local_tags,
+            mock_remote_tags,
+            mock_check,
+            mock_has,
+    ):
+        mock_has.return_value = True
+        mock_remote_tags.return_value = {"v2.12.1"}
+        mock_local_tags.return_value = set()
+        mock_get_remote_hash.return_value = "f46182e123456789"
+        mock_is_ancestor.return_value = False
+
+        with pytest.raises(RuntimeError, match="is not integrated into your current branch"):
+            sync_remote("origin")
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
