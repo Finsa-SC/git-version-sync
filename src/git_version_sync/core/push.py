@@ -54,6 +54,12 @@ def do_push(request: PushRequest):
     print(f"Pushing tag(s) to remote: {', '.join(f'v{ver}' for ver in tags_to_push)}")
     push_to_remote(tags_to_push)
 
+    number_of_tag = len(tags_to_push)
+    if number_of_tag > 1:
+        print(f"Pushed: {number_of_tag} tags to origin.")
+    else:
+        print(f"Pushed: {tags_to_push[0]} -> origin.")
+
     if request.release is not None:
         for target_version in tags_to_push:
             if request.release.strip():
