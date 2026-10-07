@@ -1,3 +1,4 @@
+import os
 import subprocess, shutil
 from pathlib import Path
 from packaging.version import Version
@@ -374,23 +375,27 @@ def has_remote(remote_name: str = 'origin') -> bool:
         return False
 
 def check_remote_connection(remote_name: str = 'origin', timeout: int = 5) -> None:
-    command = ["git", "ls-remote", "--exit-code", "-h", remote_name]
+    command = ["git", "ls-remote",  remote_name, 'HEAD']
+    env = {**os.environ, "GIT_TERMINAL_PROMPT": "0"}
 
     try:
         subprocess.run(
             command,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.PIPE,
+            text=True,
             timeout=timeout,
-            check=True
+            check=True,
+            env=env
         )
 
     except subprocess.TimeoutExpired:
-        raise GitRemoteError(f"Network error: Connection to remote '{remote_name}' timed out.")
+        raise GitRemoteError(
+            f"Connection to remote '{remote_name}' timed out after {timeout}s."
+        )
     except subprocess.CalledProcessError as e:
-        raise OSError(
-            f"Network error: Unable to reach remote '{remote_name}'. "
-            f"Please check your internet connection or repository access rights."
+        raise GitRemoteError(
+            f"Unable to reach remote '{remote_name}': {clean_git_error(e)}"
         ) from e
 
 def get_remote_tag_commit_hash(tag_name: str, remote_name: str = 'origin') -> str:
