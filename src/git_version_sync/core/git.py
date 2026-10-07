@@ -395,8 +395,7 @@ def check_remote_connection(remote_name: str = 'origin', timeout: int = 5) -> No
 
 def get_remote_tag_commit_hash(tag_name: str, remote_name: str = 'origin') -> str:
     try:
-        ref = f"refs/tags/{tag_name}"
-        command = ['git', 'ls-remote', '--tags', remote_name, ref, f'{ref}^{{}}']
+        command = ['git', 'ls-remote', '--tags', remote_name, f"refs/tags/{tag_name}", f"refs/tags/{tag_name}^{{}}"]
 
         result = subprocess.run(
             command,
@@ -413,7 +412,7 @@ def get_remote_tag_commit_hash(tag_name: str, remote_name: str = 'origin') -> st
             else:
                 direct = sha
 
-        commit = direct or peeled
+        commit = peeled or direct
         if not commit:
             raise GitCommandError(f"Tag '{tag_name}' not found on '{remote_name}'.")
 
