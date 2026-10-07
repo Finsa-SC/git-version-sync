@@ -1,3 +1,6 @@
+import sys
+
+from git_version_sync.exception import GitCommandError, GitVersionSyncError
 from git_version_sync.models import BumpRequest, SyncRequest, PushRequest, UndoRequest
 from .builder import create_parser
 from .core import do_check, do_bump, do_sync, do_push, do_undo
@@ -67,8 +70,11 @@ def main():
             case _:
                 print(f"Invalid command {args.command}")
 
-    except Exception as e:
-        print(f"{e}")
+    except GitVersionSyncError as e:
+        print(f"{e}", file=sys.stderr)
+        sys.exit(1)
+    except Exception:
+        raise
 
 if __name__ == "__main__":
     main()
