@@ -28,7 +28,6 @@ def create_parser():
     parser = argparse.ArgumentParser(
         prog="git-version-sync",
         description="Sync Git tags and project config versions.",
-        parents=[parent_parser]
     )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
