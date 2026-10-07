@@ -46,6 +46,10 @@ def main():
                 ))
 
             case 'push':
+                # User Input Validation
+                if args.all and args.tags:
+                    args._parser.error("--all cannot be combined with explicit tags.")
+
                 push_request = PushRequest(
                     tags=args.tags,
                     push_all=args.all,

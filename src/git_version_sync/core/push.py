@@ -49,13 +49,19 @@ def do_push(request: PushRequest):
 
     # If user input tag(s) manually
     elif request.tags:
-        invalid_tags = set(request.tags) - unpush_tags
+        unknown_tags = set(request.tags) - unpush_tags
 
+        tag_not_exists = False
         # Validate invalid tags
-        is_valid = len(invalid_tags) > 0
-        if is_valid:
+        for tag in unknown_tags:
+            if tag not in local_tags:
+                tag_not_exists = True
+                break
+
+        is_valid = len(unknown_tags) > 0
+        if is_valid and tag_not_exists:
             raise GitPushError(
-                f"Error: Tag(s) not found locally: {', '.join(invalid_tags)}\n"
+                f"Error: Tag(s) not found locally: {', '.join(unknown_tags)}\n"
                 f"Nothing was pushed."
             )
 
