@@ -32,11 +32,11 @@ def commit_config_change(new_version: Version, config_version: dict[Path,Version
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Git commit failed: \n{error_msg}") from e
 
-def push_to_remote(new_version: list[Version]|Version) -> None:
+def push_to_remote(new_version: list[Version]|Version, remote_name: str = 'origin') -> None:
     try:
         command = [
             'git', 'push',
-            'origin', 'HEAD',
+            remote_name, 'HEAD',
         ]
 
         if isinstance(new_version, Version):

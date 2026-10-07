@@ -5,4 +5,4 @@ class PushRequest:
     tags        : list[str]
     push_all    : bool = False
     release     : str|None = None
-    remote_name : str|None = None
+    remote_name : str = 'origin'

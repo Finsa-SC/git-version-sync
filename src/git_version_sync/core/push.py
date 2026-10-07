@@ -23,7 +23,8 @@ def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|N
     return max(previous_tag)
 
 def do_push(request: PushRequest):
-    fetch_remote_tags()
+    remote_name = request.remote_name if request.remote_name else 'origin'
+    fetch_remote_tags(remote_name)
 
     local_tags = get_local_tags()
     remote_tags = get_remote_tags()
@@ -52,7 +53,7 @@ def do_push(request: PushRequest):
     tags_to_push.sort()
 
     print(f"Pushing tag(s) to remote: {', '.join(f'v{ver}' for ver in tags_to_push)}")
-    push_to_remote(tags_to_push)
+    push_to_remote(tags_to_push, remote_name)
 
     number_of_tag = len(tags_to_push)
     if number_of_tag > 1:
