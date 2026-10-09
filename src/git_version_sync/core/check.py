@@ -4,7 +4,8 @@ from packaging.version import Version
 
 from git_version_sync.config_handlers import get_config_parser
 from git_version_sync.core.git import get_remote_tags, get_local_tags, check_remote_connection
-from git_version_sync.utils import get_config_version
+from git_version_sync.utils import get_config_version, Color
+
 
 def parse_highest_version(tags: set[str|Version]) -> Version | None:
     valid_version: list[Version] = []
@@ -122,9 +123,9 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     if missing_in_local:
         output.append(
             f"\nWarning: Local version is behind remote."
-            f"\nHint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes."
+            f"\n{Color.YELLOW}Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes."
         )
     elif missing_in_remote:
-        output.append("\nHint: Run 'git-version-sync push' to sync local tags to remote.")
+        output.append(f"\n{Color.YELLOW}Hint: Run 'git-version-sync push' to sync local tags to remote.")
 
     return "\n".join(output)

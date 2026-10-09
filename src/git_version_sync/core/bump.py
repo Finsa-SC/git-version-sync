@@ -23,7 +23,7 @@ from .check import (
 from ..config_handlers import get_config_parser
 from ..exception import GitCommandError, ConfigVersionMismatch
 from ..models import BumpRequest, UndoRequest
-from ..utils import get_config_version
+from ..utils import get_config_version, Color
 
 
 def bump_config_version(new_version: Version, config_path: Path) -> None:
@@ -121,7 +121,7 @@ def do_bump(request: BumpRequest) -> str:
     if not local_tags and not request.force:
         return (
             f"No local tag found.\n"
-            f"Hint: Run 'git-version-sync sync' to create tag 'v1.0.0' from pyproject.toml, or use '-f' / '--force' to calculate bump from the initial commit."
+            f"{Color.YELLOW}Hint: Run 'git-version-sync sync' to create tag 'v1.0.0', or use '-f' / '--force' to calculate bump from the initial commit."
         )
 
     remote_tags = get_remote_tags()

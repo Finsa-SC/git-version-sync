@@ -4,6 +4,7 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteError
+from git_version_sync.utils import Color
 
 
 def commit_config_change(new_version: Version, config_version: dict[Path,Version]) -> None:
@@ -62,7 +63,7 @@ def fetch_remote_tags(remote_name: str = 'origin'):
     if not has_remote(remote_name):
         raise GitRemoteError(
             f"Remote '{remote_name}' not found.\n"
-            f"Hint: Add a remote using 'git remote add {remote_name} <url>'"
+            f"{Color.YELLOW}Hint: Add a remote using 'git remote add {remote_name} <url>'"
         )
 
     command = ['git', 'fetch', '--tags', remote_name]
@@ -215,7 +216,7 @@ def get_remote_tags(remote_name: str = 'origin') -> set[str]:
     if not has_remote(remote_name):
         raise GitRemoteError(
             f"No remote repository found for {remote_name}.\n"
-            f"Hint: Connect a remote repository first using 'git remote add {remote_name} <url>' or list existing remotes with 'git remote -v'."
+            f"{Color.YELLOW}Hint: Connect a remote repository first using 'git remote add {remote_name} <url>' or list existing remotes with 'git remote -v'."
         )
 
     command = ['git', 'ls-remote', '--tags', 'origin']

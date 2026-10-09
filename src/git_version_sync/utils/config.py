@@ -2,6 +2,7 @@ from pathlib import Path
 from packaging.version import Version
 
 from git_version_sync.exception import GitVersionSyncError
+from .colors import Color
 
 DEFAULT_CONFIG_FILES = [
     "pyproject.toml",
@@ -44,5 +45,5 @@ def get_config_version(config_name: Path | None=None) -> dict[Path, Version]:
 
         raise GitVersionSyncError(
             "No supported config file found in repository root.\n"
-            "hint: Please specify the config file manually using '--config <path>' if you use a custom setup."
+            f"{Color.YELLOW}hint: Please specify the config file manually using '--config <path>' if you use a custom setup."
         )
