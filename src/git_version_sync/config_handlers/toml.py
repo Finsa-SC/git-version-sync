@@ -3,6 +3,8 @@ from pathlib import Path
 from typing import Tuple
 from packaging.version import Version
 
+from ..exception import GitVersionSyncError
+
 try:
     import tomllib
 except ImportError:
@@ -46,7 +48,7 @@ class TomlConfigParser(BaseConfigParser):
             if val and isinstance(val, str):
                 return Version(val)
 
-        raise RuntimeError(f"Version field not found in {self.config_path.name}")
+        raise GitVersionSyncError(f"Version field not found in {self.config_path.name}")
 
     def update_version(self, new_version: Version) -> None:
         content = self.config_path.read_text(encoding="utf-8")
@@ -61,7 +63,7 @@ class TomlConfigParser(BaseConfigParser):
                 break
 
         if not target_keys:
-            raise RuntimeError(f"Failed to locate version key to update in {self.config_path.name}")
+            raise GitVersionSyncError(f"Failed to locate version key to update in {self.config_path.name}")
 
         # Update using Regex Section TOML
         if len(target_keys) == 1:
@@ -79,6 +81,6 @@ class TomlConfigParser(BaseConfigParser):
 
         new_content, count = re.subn(pattern, replacement, content, count=1, flags=re.MULTILINE)
         if count == 0:
-            raise RuntimeError(f"Failed to update version in {self.config_path.name}")
+            raise GitVersionSyncError(f"Failed to update version in {self.config_path.name}")
 
         self.config_path.write_text(new_content, encoding="utf-8")

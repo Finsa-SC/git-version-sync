@@ -12,7 +12,7 @@ from .git import (
     get_remote_tag_commit_hash,
     is_commit_in_current_branch, get_tag_commit_hash
 )
-from ..exception import GitRemoteError, ConfigFileVersionError
+from ..exception import GitRemoteError, ConfigFileVersionError, GitVersionSyncError
 from ..models import SyncRequest
 from ..utils import get_config_version
 
@@ -29,7 +29,7 @@ def sync_version(
                 bump_config_version(highest_local_tag, config_path)
                 print(f"Synced {config_path.name} version to match Git tag v{highest_local_tag}.")
         else:
-            raise RuntimeError("No git tag found on local.")
+            raise GitVersionSyncError("No git tag found on local.")
 
     elif request.to_config and highest_local_tag:
         bump_git_tag(config_tag, message=f"Sync git tag to v{config_tag}.")
@@ -82,7 +82,7 @@ def sync_remote(remote_name: str) -> None:
     )
 
     if not is_commit_in_current_branch(commit_hash):
-        raise RuntimeError(
+        raise GitVersionSyncError(
             f"Error: Commit '{commit_hash[:7]}' associated with tag '{tag_name}' "
             f"is not integrated into your current branch.\n"
             f"Hint: Please run 'git pull' or merge the target branch before syncing version."

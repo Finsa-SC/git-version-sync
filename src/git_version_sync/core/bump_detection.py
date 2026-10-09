@@ -3,6 +3,7 @@ import re
 from packaging.version import Version
 
 from git_version_sync.core.git import get_commit_since_tag
+from git_version_sync.exception import GitVersionSyncError
 from git_version_sync.models import BumpType
 
 
@@ -60,7 +61,7 @@ def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
         reason = f"Detected {patch_count} 'fix' commit(s) since v{base_version}"
         return "patch", reason
 
-    raise RuntimeError(
+    raise GitVersionSyncError(
         "No Conventional Commits pattern matched (feat/fix/BREAKING CHANGE). "
         "Please specify bump type manually."
     )

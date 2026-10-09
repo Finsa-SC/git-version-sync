@@ -25,7 +25,7 @@ from git_version_sync.core.git import (
 )
 
 # Custom exceptions
-from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteError
+from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteError, GitVersionSyncError
 
 # Target modul config_handler & utils
 from git_version_sync.config_handlers import (
@@ -144,8 +144,8 @@ class TestGetConfigPath:
         assert "custom_config.json" in path_names
 
     def test_custom_config_not_found(self, temp_git_repo):
-        """Harus melempar RuntimeError jika file kustom tidak ditemukan."""
-        with pytest.raises(RuntimeError, match="Config file not found"):
+        """Harus melempar GitVersionSyncError jika file kustom tidak ditemukan."""
+        with pytest.raises(GitVersionSyncError, match="Config file not found"):
             get_config_version(Path("nonexistent.toml"))
 
 
@@ -218,7 +218,7 @@ class TestConfigParsers:
         unsupported_file = tmp_path / "config.unknown"
         unsupported_file.write_text("version = 1.0.0")
 
-        with pytest.raises(RuntimeError, match="Unsupported configuration file type"):
+        with pytest.raises(GitVersionSyncError, match="Unsupported configuration file type"):
             get_config_parser(unsupported_file)
 
 
@@ -665,7 +665,7 @@ class TestSyncRemote:
         mock_get_remote_hash.return_value = "f46182e123456789"
         mock_is_ancestor.return_value = False
 
-        with pytest.raises(RuntimeError, match="is not integrated into your current branch"):
+        with pytest.raises(GitVersionSyncError, match="is not integrated into your current branch"):
             sync_remote("origin")
 
 if __name__ == "__main__":

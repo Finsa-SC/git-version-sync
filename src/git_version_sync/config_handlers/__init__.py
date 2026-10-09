@@ -6,6 +6,8 @@ from .toml import TomlConfigParser
 from .json_config import JsonConfigParser
 from .xaml_config import XmlConfigParser
 from .yaml_config import YamlConfigParser
+from ..exception import GitVersionSyncError
+
 
 def get_config_parser(config_path: Path) -> BaseConfigParser:
     suffix = config_path.suffix.lower()
@@ -21,4 +23,4 @@ def get_config_parser(config_path: Path) -> BaseConfigParser:
     elif suffix in ('.xml', '.xaml'):
         return XmlConfigParser(config_path)
     else:
-        raise RuntimeError(f"Unsupported configuration file type {config_path.name}")
+        raise GitVersionSyncError(f"Unsupported configuration file type {config_path.name}")
