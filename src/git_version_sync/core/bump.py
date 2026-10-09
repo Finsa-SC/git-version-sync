@@ -88,13 +88,14 @@ def handle_push_error(tag_name: str, config_path: Path|None, remote_name: str):
     )
     do_undo(undo_request)
 
-def format_dry_run_output(request: BumpRequest, new_version: Version, config_version: dict[Path,Version]) -> str:
+def format_dry_run_output(request: BumpRequest, new_version: Version, config_version: dict[Path,Version], bump_type: str) -> str:
     config_out = []
     for config_path in config_version.keys():
         config_out.append(f"Would update {config_path.name} to v{new_version} (DRY RUN)",)
     config_out_str = '\n'.join(config_out)
 
     output: list[str] = [
+        f"Would apply a {bump_type} bump (DRY RUN)",
         f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
         f"{config_out_str}"
         f"\nWould create Git tag v{new_version} (DRY RUN)",
@@ -155,10 +156,11 @@ def do_bump(request: BumpRequest) -> str:
         bump_type, reason = detect_bump_type(base_version)
         next_version = calculate_next_version(base_version, bump_type)
 
-        print(reason)
-        print(f"Suggested bump: {bump_type} (v{base_version} -> v{next_version})")
-
+        # Interactive
         if not request.dry_run:
+            print(reason)
+            print(f"Suggested bump: {bump_type} (v{base_version} -> v{next_version})")
+
             confirm = input("Apply this version bump? [Y/n]: ").lower()
             print("")
 
@@ -180,7 +182,8 @@ def do_bump(request: BumpRequest) -> str:
         return format_dry_run_output(
             request,
             new_version,
-            config_version
+            config_version,
+            bump_type=bump_type
         )
 
     bump_status = bump_version(
