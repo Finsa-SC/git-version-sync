@@ -112,11 +112,7 @@ def format_dry_run_output(request: BumpRequest, new_version: Version, config_ver
     return "\n".join(output)
 
 def do_bump(request: BumpRequest) -> str:
-    if request.push:
-        check_remote_connection(request.remote_name)
-
-    config_version = get_config_version(request.config_path)
-
+    # Validate local tag is already exist
     local_tags = get_local_tags()
     if not local_tags and not request.force:
         return (
@@ -124,32 +120,40 @@ def do_bump(request: BumpRequest) -> str:
             f"{Color.YELLOW}Hint: Run 'git-version-sync sync' to create tag 'v1.0.0', or use '-f' / '--force' to calculate bump from the initial commit."
         )
 
-    remote_tags = get_remote_tags()
-
+    config_version = get_config_version(request.config_path)
     config_tag = parse_highest_version(set(config_version.values()))
-    highest_local_tag = parse_highest_version(local_tags)
-    highest_overall_tag = parse_highest_version(local_tags | remote_tags)
 
-    all_match = is_all_config_match(config_version)
-    if not all_match and not request.force:
-        raise ConfigVersionMismatch(
-            f"{get_config_mismatch_str(config_version, highest_local_tag)}"
-            f"Run `git-version-sync sync` first or use `--force` to bypass."
+    if request.push or request.remote_name:
+        remote_name = request.remote_name if request.remote_name else 'origin'
+        check_remote_connection(remote_name)
+
+        remote_tags = get_remote_tags(remote_name=remote_name)
+
+        highest_local_tag = parse_highest_version(local_tags)
+        highest_overall_tag = parse_highest_version(local_tags | remote_tags)
+
+        all_match = is_all_config_match(config_version)
+        if not all_match and not request.force:
+            raise ConfigVersionMismatch(
+                f"{get_config_mismatch_str(config_version, highest_local_tag)}"
+                f"Run `git-version-sync sync` first or use `--force` to bypass."
+            )
+
+        missing_in_local = get_missing_in_local_tags(remote_tags, local_tags)
+        if missing_in_local and not request.force:
+            missing_str = ", ".join(f"{ver}" for ver in missing_in_local)
+            raise GitCommandError(
+                f"Remote repository has newer tag(s) missing locally: {missing_str}\n"
+                f"Run `git-version-sync sync` first or use `--force` to bump from the highest remote tag."
+            )
+
+        base_version = max(
+            Version(v)
+            for v in [str(config_tag), str(highest_local_tag), str(highest_overall_tag)]
+            if v is not None
         )
-
-    missing_in_local = get_missing_in_local_tags(remote_tags, local_tags)
-    if missing_in_local and not request.force:
-        missing_str = ", ".join(f"{ver}" for ver in missing_in_local)
-        raise GitCommandError(
-            f"Remote repository has newer tag(s) missing locally: {missing_str}\n"
-            f"Run `git-version-sync sync` first or use `--force` to bump from the highest remote tag."
-        )
-
-    base_version = max(
-        v
-        for v in [config_tag, highest_local_tag, highest_overall_tag]
-        if v is not None
-    )
+    else:
+        base_version = parse_highest_version(local_tags | set(f"v{config_tag}"))
 
     # if run without bump type, will be interactive
     if request.bump_type is None:
