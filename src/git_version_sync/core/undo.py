@@ -9,7 +9,7 @@ from git_version_sync.core.git import (
     reset_soft_head,
     get_remote_tags, get_local_tags, has_remote
 )
-from git_version_sync.exception import GitRemoteError
+from git_version_sync.exception import GitRemoteError, GitVersionSyncError
 from git_version_sync.models import UndoRequest
 from git_version_sync.utils import get_config_version
 
@@ -36,7 +36,7 @@ def do_undo(request: UndoRequest) -> None:
     latest_tag = parse_highest_version(local_tags)
 
     if latest_tag is None:
-        raise RuntimeError("No local tag found.")
+        raise GitVersionSyncError("No local tag found.")
 
     target_tag = Version(request.undo_tag.lstrip('v')) if request.undo_tag else latest_tag
     is_latest = (target_tag == latest_tag)
@@ -74,14 +74,14 @@ def do_undo(request: UndoRequest) -> None:
         print(f"Skipped resetting config and git commit to preserve history.")
 
     if request.remote_name:
-        if not get_remote_tags(request.remote_name):
+        if target_tag not in get_remote_tags(request.remote_name):
             print(f"Skipped remote tag deletion (tag 'v{target_tag}' not found on remote).")
         else:
             delete_remote_tag(target_tag, request.remote_name)
             print(f"Deleted remote tag 'v{target_tag}'.")
 
-        delete_tag(target_tag)
-        print(f"Deleted local tag 'v{target_tag}'.")
+    delete_tag(target_tag)
+    print(f"Deleted local tag 'v{target_tag}'.")
 
     # Check deleted tag in remote
     remote_tags = get_remote_tags()

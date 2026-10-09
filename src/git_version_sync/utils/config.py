@@ -1,6 +1,7 @@
 from pathlib import Path
 from packaging.version import Version
 
+from git_version_sync.exception import GitVersionSyncError
 
 DEFAULT_CONFIG_FILES = [
     "pyproject.toml",
@@ -26,7 +27,7 @@ def get_config_version(config_name: Path | None=None) -> dict[Path, Version]:
         if config_path.exists():
             return {config_path: get_config_tag(config_path)}
         else:
-            raise RuntimeError(f"Config file not found: {config_path}")
+            raise GitVersionSyncError(f"Config file not found: {config_path}")
 
     # Search all config file in git path
     else:
@@ -41,7 +42,7 @@ def get_config_version(config_name: Path | None=None) -> dict[Path, Version]:
         if found_config:
             return found_config
 
-        raise ValueError(
+        raise GitVersionSyncError(
             "No supported config file found in repository root.\n"
             "hint: Please specify the config file manually using '--config <path>' if you use a custom setup."
         )

@@ -87,7 +87,7 @@ def do_push(request: PushRequest):
     if number_of_tag > 1:
         print(f"Pushed: {number_of_tag} tags to origin.")
     else:
-        print(f"Pushed: {pending_tags[0]} -> origin.")
+        print(f"Pushed: v{pending_tags[0]} -> {remote_name}.")
 
     if request.release is not None:
         for target_version in pending_tags:

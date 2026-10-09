@@ -4,6 +4,7 @@ from typing import Optional, Tuple
 from packaging.version import Version
 
 from .base import BaseConfigParser
+from ..exception import GitVersionSyncError
 
 
 class XmlConfigParser(BaseConfigParser):
@@ -25,7 +26,7 @@ class XmlConfigParser(BaseConfigParser):
         try:
             return ET.parse(self.config_path)
         except ET.ParseError as e:
-            raise RuntimeError(f"Failed to parse XML file {self.config_path.name}: {e}") from e
+            raise GitVersionSyncError(f"Failed to parse XML file {self.config_path.name}: {e}") from e
 
     def _strip_ns(self, tag: str) -> str:
         return tag.split("}")[-1] if "}" in tag else tag
