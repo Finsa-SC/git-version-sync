@@ -213,13 +213,7 @@ def get_git_path() -> Path:
     return Path(result.stdout.strip())
 
 def get_remote_tags(remote_name: str = 'origin') -> set[str]:
-    if not has_remote(remote_name):
-        raise GitRemoteError(
-            f"No remote repository found for {remote_name}.\n"
-            f"{Color.YELLOW}Hint: Connect a remote repository first using 'git remote add {remote_name} <url>' or list existing remotes with 'git remote -v'."
-        )
-
-    command = ['git', 'ls-remote', '--tags', 'origin']
+    command = ['git', 'ls-remote', '--tags', remote_name]
     result = subprocess.run(
         command,
         capture_output=True,
