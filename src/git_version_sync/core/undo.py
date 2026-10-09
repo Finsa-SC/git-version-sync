@@ -80,8 +80,8 @@ def do_undo(request: UndoRequest) -> None:
             delete_remote_tag(target_tag, request.remote_name)
             print(f"Deleted remote tag 'v{target_tag}'.")
 
-        delete_tag(target_tag)
-        print(f"Deleted local tag 'v{target_tag}'.")
+    delete_tag(target_tag)
+    print(f"Deleted local tag 'v{target_tag}'.")
 
     # Check deleted tag in remote
     remote_tags = get_remote_tags()
