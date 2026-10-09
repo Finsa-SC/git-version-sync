@@ -74,7 +74,7 @@ def do_undo(request: UndoRequest) -> None:
         print(f"Skipped resetting config and git commit to preserve history.")
 
     if request.remote_name:
-        if not get_remote_tags(request.remote_name):
+        if target_tag not in get_remote_tags(request.remote_name):
             print(f"Skipped remote tag deletion (tag 'v{target_tag}' not found on remote).")
         else:
             delete_remote_tag(target_tag, request.remote_name)
