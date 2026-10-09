@@ -133,9 +133,9 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
             if missing_in_local:
                 output.append(
                     f"\n{Color.YELLOW}Warning: Local version is behind remote.{Color.WHITE}"
-                    f"\n{Color.YELLOW}Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes.{Color.WHITE}"
+                    f"\n{Color.BLUE}Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes.{Color.WHITE}"
                 )
             elif missing_in_remote:
-                output.append(f"\n{Color.YELLOW}Hint: Run 'git-version-sync push' to sync local tags to remote.{Color.WHITE}")
+                output.append(f"\n{Color.BLUE}Hint: Run 'git-version-sync push' to sync local tags to remote.{Color.WHITE}")
 
     return "\n".join(output)

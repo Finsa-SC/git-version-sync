@@ -117,7 +117,7 @@ def do_bump(request: BumpRequest) -> str:
     if not local_tags and not request.force:
         return (
             f"No local tag found.\n"
-            f"{Color.YELLOW}Hint: Run 'git-version-sync sync' to create tag 'v1.0.0', or use '-f' / '--force' to calculate bump from the initial commit."
+            f"\n{Color.BLUE}Hint: Run 'git-version-sync sync' to create tag 'v1.0.0', or use '-f' / '--force' to calculate bump from the initial commit."
         )
 
     config_version = get_config_version(request.config_path)

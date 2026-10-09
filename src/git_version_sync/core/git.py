@@ -32,7 +32,7 @@ def commit_config_change(new_version: Version, config_version: dict[Path,Version
             return
 
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Git commit failed: \n{error_msg}") from e
+        raise GitCommandError(f"Git commit {Color.RED}Failed: \n{error_msg}") from e
 
 def push_to_remote(new_version: list[Version]|Version, remote_name: str = 'origin') -> None:
     try:
@@ -55,7 +55,7 @@ def push_to_remote(new_version: list[Version]|Version, remote_name: str = 'origi
         )
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitPushError(f"Failed to push to remote: \n{error_msg}") from e
+        raise GitPushError(f"{Color.RED}Failed to push to remote: \n{error_msg}") from e
 
 def fetch_remote_tags(remote_name: str = 'origin'):
     # Validate git structure
@@ -63,7 +63,7 @@ def fetch_remote_tags(remote_name: str = 'origin'):
     if not has_remote(remote_name):
         raise GitRemoteError(
             f"Remote '{remote_name}' not found.\n"
-            f"{Color.YELLOW}Hint: Add a remote using 'git remote add {remote_name} <url>'"
+            f"{Color.BLUE}Hint: Add a remote using 'git remote add {remote_name} <url>'"
         )
 
     command = ['git', 'fetch', '--tags', remote_name]
@@ -77,7 +77,7 @@ def fetch_remote_tags(remote_name: str = 'origin'):
         )
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to fetch tags from remote: {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to fetch tags from remote: {error_msg}") from e
 
 def create_github_release(version: Version, message: str|None=None, draft: bool=False) -> None:
     tag_name = f"v{version}"
@@ -101,7 +101,7 @@ def create_github_release(version: Version, message: str|None=None, draft: bool=
         )
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to create release tag: \n{error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to create release tag: \n{error_msg}") from e
 
 def delete_tag(version: Version) -> None:
     command = ['git', 'tag', '-d', f"v{version}"]
@@ -116,7 +116,7 @@ def delete_tag(version: Version) -> None:
 
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to check branch status: {error_msg}") from e
 
 def delete_remote_tag(version: Version, remote_name: str) -> None:
     command = ['git', 'push', remote_name, '--delete', f"v{version}"]
@@ -131,7 +131,7 @@ def delete_remote_tag(version: Version, remote_name: str) -> None:
 
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to check branch status: {error_msg}") from e
 
 def bump_git_tag(new_version: Version, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
@@ -155,7 +155,7 @@ def bump_git_tag(new_version: Version, message: str|None = None) -> None:
         if "already exists" in error_msg:
             raise GitCommandError(f"Tag 'v{new_version}' already exists in this repository.") from e
 
-        raise GitCommandError(f"Failed to create Git tag:\n{error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to create Git tag:\n{error_msg}") from e
 
 def get_tag_commit(tag_name: str) -> str | None:
     command = ["git", "rev-parse", f"{tag_name}^{{commit}}"]
@@ -190,7 +190,7 @@ def reset_soft_head() -> None:
         )
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to soft reset head: {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to soft reset head: {error_msg}") from e
 
 def get_git_path() -> Path:
     command = ["git", "rev-parse", "--show-toplevel"]
@@ -208,7 +208,7 @@ def get_git_path() -> Path:
         if "not a git" in err_msg:
             raise GitCommandError(f"Not a Git repository (or any of the parent directories).") from e
         else:
-            raise GitCommandError(f"Failed to get git path: {err_msg}") from e
+            raise GitCommandError(f"{Color.RED}Failed to get git path: {err_msg}") from e
 
     return Path(result.stdout.strip())
 
@@ -254,7 +254,7 @@ def is_branch_behind_remote() -> bool:
 
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to check branch status: {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to check branch status: {error_msg}") from e
 
 def get_commit_since_tag(
         base_version: Version|None = None,
@@ -304,7 +304,7 @@ def get_commit_since_tag(
             return get_commit_since_tag(None, target_reff)
 
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to collect git log: {error_msg}") from e
 
 def clean_git_error(e: subprocess.CalledProcessError) -> str:
     raw_error = e.stderr or e.stdout or str(e)
@@ -347,7 +347,7 @@ def get_local_tags() -> set[str]:
         return tags
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to collect git log: {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to collect git log: {error_msg}") from e
 
 def has_remote(remote_name: str = 'origin') -> bool:
     command = ['git', 'remote']
@@ -386,11 +386,11 @@ def check_remote_connection(remote_name: str = 'origin', timeout: int = 5) -> No
 
     except subprocess.TimeoutExpired:
         raise GitRemoteError(
-            f"Connection to remote '{remote_name}' timed out after {timeout}s."
+            f"{Color.RED}Connection to remote '{remote_name}' timed out after {timeout}s."
         )
     except subprocess.CalledProcessError as e:
         raise GitRemoteError(
-            f"Unable to reach remote '{remote_name}': {clean_git_error(e)}"
+            f"{Color.RED}Unable to reach remote '{remote_name}': {clean_git_error(e)}"
         ) from e
 
 def get_remote_tag_commit_hash(tag_name: str, remote_name: str = 'origin') -> str:
@@ -420,7 +420,7 @@ def get_remote_tag_commit_hash(tag_name: str, remote_name: str = 'origin') -> st
 
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to read tag '{tag_name}' from '{remote_name}': {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to read tag '{tag_name}' from '{remote_name}': {error_msg}") from e
 
 def get_tag_commit_hash(tag_name: str) -> str:
     try:
@@ -436,7 +436,7 @@ def get_tag_commit_hash(tag_name: str) -> str:
 
     except subprocess.CalledProcessError as e:
         error_msg = clean_git_error(e)
-        raise GitCommandError(f"Failed to resolve commit for tag '{tag_name}': {error_msg}") from e
+        raise GitCommandError(f"{Color.RED}Failed to resolve commit for tag '{tag_name}': {error_msg}") from e
 
 def is_commit_in_current_branch(commit_hash: str) -> bool:
     command = ['git', 'merge-base', '--is-ancestor', commit_hash, 'HEAD']

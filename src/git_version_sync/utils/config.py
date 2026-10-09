@@ -45,5 +45,5 @@ def get_config_version(config_name: Path | None=None) -> dict[Path, Version]:
 
         raise GitVersionSyncError(
             "No supported config file found in repository root.\n"
-            f"{Color.YELLOW}hint: Please specify the config file manually using '--config <path>' if you use a custom setup."
+            f"{Color.BLUE}Hint: Please specify the config file manually using '--config <path>' if you use a custom setup."
         )

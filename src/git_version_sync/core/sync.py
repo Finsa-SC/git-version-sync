@@ -63,7 +63,7 @@ def sync_remote(remote_name: str) -> None:
     if not has_remote(remote_name):
         raise GitRemoteError(
             f"Git remote '{remote_name}' was not found.\n"
-            f"{Color.YELLOW}Hint: Run 'git remote -v' to view existing remotes, or add it using 'git remote add {remote_name} <url>'."
+            f"{Color.BLUE}Hint: Run 'git remote -v' to view existing remotes, or add it using 'git remote add {remote_name} <url>'."
         )
 
     # Is remote tag missing in local?
@@ -86,7 +86,7 @@ def sync_remote(remote_name: str) -> None:
         raise GitVersionSyncError(
             f"Error: Commit '{commit_hash[:7]}' associated with tag '{tag_name}' "
             f"is not integrated into your current branch.\n"
-            f"{Color.YELLOW}Hint: Please run 'git pull' or merge the target branch before syncing version."
+            f"{Color.BLUE}Hint: Please run 'git pull' or merge the target branch before syncing version."
         )
 
     if not in_local:
