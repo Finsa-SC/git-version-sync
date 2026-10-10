@@ -1,4 +1,4 @@
-from packaging.version import Version
+from packaging.version import Version, InvalidVersion
 
 from git_version_sync.core.check import parse_highest_version
 from git_version_sync.core.git import (
@@ -15,7 +15,14 @@ from git_version_sync.utils import get_config_version
 
 
 def get_previous_version(version_list: set[str]) -> Version|None:
-    parsed_versions = [Version(ver.lstrip("v")) for ver in version_list]
+    parsed_versions = []
+
+    for ver in version_list:
+        try:
+            parsed_versions.append(Version(ver.lstrip("v")))
+
+        except InvalidVersion:
+            continue
 
     sorted_tags = sorted(parsed_versions)
 
