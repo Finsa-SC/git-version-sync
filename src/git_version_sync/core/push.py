@@ -92,8 +92,6 @@ def do_push(request: PushRequest):
             print(f"Nothing to push: all local tags already exist on {remote_name}.")
         return
 
-    pending_tags.sort()
-
     print(f"Pushing tag(s) to remote: {', '.join(f'v{ver}' for ver in pending_tags)}")
     push_to_remote(pending_tags, remote_name)
 

@@ -93,6 +93,6 @@ def do_undo(request: UndoRequest) -> None:
     # Check deleted tag in remote
     remote_tags = get_remote_tags()
     if not request.remote_name and (f"v{target_tag}" in remote_tags or str(target_tag) in remote_tags):
-        print(f"Note: v{target_tag} still exists on remote. Run with '-r' to delete it from remote.")
+        print(f"Note: v{target_tag} still exists on remote. Run with '-R' to delete it from remote.")
 
     print(f"\nSuccessfully reverted version from 'v{latest_tag}' -> 'v{previous_version}'")
