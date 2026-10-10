@@ -20,35 +20,36 @@ from ..utils import get_config_version, Color
 def sync_version(
         request: SyncRequest,
         highest_local_tag:Version|None,
-        config_tag: Version,
+        config_tag: str,
         config_version: dict[Path,Version]
 ) -> None:
-
     if request.to_git:
         if highest_local_tag:
             for config_path in config_version.keys():
                 bump_config_version(highest_local_tag, config_path)
-                print(f"Synced {config_path.name} version to match Git tag v{highest_local_tag}.")
+                str_highest_local = f"{highest_local_tag}" if request.no_prefix else f"v{highest_local_tag}"
+                print(f"Synced {config_path.name} version to match Git tag {str_highest_local}.")
+
         else:
             raise GitVersionSyncError("No git tag found on local.")
 
     elif request.to_config and highest_local_tag:
-        bump_git_tag(config_tag, message=f"Sync git tag to v{config_tag}.")
-        print(f"Synced Git tag to match config version v{config_tag}.")
+        bump_git_tag(config_tag, message=f"Sync git tag to {config_tag}.")
+        print(f"Synced Git tag to match config version {config_tag}.")
 
     else:
         if highest_local_tag:
-            target_version = max(config_tag, highest_local_tag)
+            target_version = str(parse_highest_version([config_tag, highest_local_tag]))
         else:
             target_version = config_tag
 
         all_config_match = is_all_config_match(config_version)
-        if highest_local_tag and (not all_config_match or highest_local_tag > config_tag):
+        if highest_local_tag and (not all_config_match or highest_local_tag > Version(config_tag)):
             for config_path in config_version.keys():
-                bump_config_version(target_version, config_path)
+                bump_config_version(Version(target_version), config_path)
                 print(f"Synced {config_path.name} version to match v{target_version}.")
 
-        elif highest_local_tag and highest_local_tag < config_tag:
+        elif highest_local_tag and highest_local_tag < Version(config_tag):
             bump_git_tag(target_version)
             print(f"Synced Git tag to match with v{target_version}.")
 
@@ -84,9 +85,9 @@ def sync_remote(remote_name: str) -> None:
 
     if not is_commit_in_current_branch(commit_hash):
         raise GitVersionSyncError(
-            f"Error: Commit '{commit_hash[:7]}' associated with tag '{tag_name}' "
-            f"is not integrated into your current branch.\n"
-            f"{Color.BLUE}Hint: Please run 'git pull' or merge the target branch before syncing version."
+            f"{Color.RED}Error: Commit '{commit_hash[:7]}' associated with tag '{tag_name}'."
+            f"is not integrated into your current branch.{Color.WHITE}\n"
+            f"{Color.BLUE}Hint: Please run 'git pull' or merge the target branch before syncing version.{Color.WHITE}"
         )
 
     if not in_local:
@@ -107,21 +108,29 @@ def do_sync(request: SyncRequest) -> None:
     for config_path, ver in config_list.items():
         unique_version[get_config_tag(config_path)] = ver
 
-    config_tag = parse_highest_version(set(unique_version.values()))
+    config_tag = str(
+        parse_highest_version(set(unique_version.values()))
+    )
+
     if not config_tag:
         raise ConfigFileVersionError(
             f"No config tag found."
         )
 
+    print(config_tag)
+    print(highest_local_tag)
     if not local_tags:
-        bump_git_tag(config_tag)
         print("No local git tag found.")
+        bump_git_tag(config_tag)
         print(f"Synced version from config file. Created tag: v{config_tag}")
         return
 
-    elif config_tag == highest_local_tag and len(unique_version) == 1:
+    elif Version(config_tag) == highest_local_tag and len(unique_version) == 1:
         print(f"Already in sync at (v{config_tag})")
         return
 
     else:
+        if not request.no_prefix:
+            config_tag = "v" + config_tag
+
         sync_version(request, highest_local_tag, config_tag, config_list)

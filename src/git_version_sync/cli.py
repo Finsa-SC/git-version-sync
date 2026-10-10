@@ -34,6 +34,7 @@ def main():
                     to_git      = args.to_git,
                     to_config   = args.to_config,
                     config_name = args.config,
+                    no_prefix   = args.no_prefix,
                     remote_name = args.remote,
                 )
                 do_sync(

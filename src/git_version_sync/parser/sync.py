@@ -15,3 +15,8 @@ def sync_subparse(subparsers, parent_parser):
         action="store_true",
         help="Force Git tag to match the version in project config version"
     )
+    sync_group.add_argument(
+        "--no-prefix",
+        action="store_true",
+        help="Not using prefix.",
+    )
