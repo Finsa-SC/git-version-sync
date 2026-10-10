@@ -1,4 +1,4 @@
-from packaging.version import Version
+from packaging.version import Version, InvalidVersion
 
 from .changelog import generate_changelog
 from .check import get_remote_tags, parse_highest_version, get_missing_in_remote_tags
@@ -29,6 +29,17 @@ def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|N
 
     return max(previous_tag)
 
+def seperate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
+    semver = set()
+    non_semver = set()
+    for tag in tag_list:
+        try:
+            semver.add(Version(tag))
+        except InvalidVersion:
+            non_semver.add(tag)
+
+    return semver, non_semver
+
 def do_push(request: PushRequest):
     remote_name = request.remote_name if request.remote_name else 'origin'
     fetch_remote_tags(remote_name)
@@ -42,10 +53,12 @@ def do_push(request: PushRequest):
     if latest_tags is None:
         raise GitPushError("Failed to push to remote, No local tag found.")
 
-    pending_tags: list[Version] = []
+    pending_tags: list[Version|str] = []
     # If using --all flag
     if request.push_all:
-        pending_tags.extend(Version(ver) for ver in unpush_tags)
+        semver_tags, non_semver_tags = seperate_non_semver(unpush_tags)
+        pending_tags.extend(Version(ver) for ver in semver_tags)
+        pending_tags.extend(non_semver_tags)
 
     # If user input tag(s) manually
     elif request.tags:
@@ -65,7 +78,8 @@ def do_push(request: PushRequest):
                 f"Nothing was pushed."
             )
 
-        pending_tags.extend(Version(ver) for ver in request.tags if ver in unpush_tags)
+        clean_unpush_tags = seperate_non_semver(unpush_tags)
+        pending_tags.extend(Version(ver) for ver in request.tags if ver in clean_unpush_tags)
 
     # If user doesn't input any tag, auto use latest lag
     elif f"v{latest_tags}" in unpush_tags:
@@ -91,6 +105,10 @@ def do_push(request: PushRequest):
 
     if request.release is not None:
         for target_version in pending_tags:
+            # Skip non semver
+            if isinstance(target_version, str):
+                continue
+
             if request.release.strip():
                 change_log = request.release
             else:
