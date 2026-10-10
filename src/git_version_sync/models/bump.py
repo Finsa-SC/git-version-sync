@@ -14,4 +14,5 @@ class BumpRequest:
     push        : bool = False
     draft       : bool = False
     dry_run     : bool = False
+    no_prefix   : bool = False
     remote_name : str|None = None

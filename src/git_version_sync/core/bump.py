@@ -37,22 +37,23 @@ def bump_version(
         config_version: dict[Path,Version]
 ) -> bool:
     mutated_local = False
+    version_str = f"{new_version}" if request.no_prefix else f"v{new_version}"
 
     try:
         for config_path in config_version.keys():
             bump_config_version(new_version, config_path)
-            print(f"Updated {config_path.name} to v{new_version}")
+            print(f"Updated {config_path.name} to {version_str}")
 
-        commit_config_change(new_version, config_version)
-        print(f"Committed changes: 'bump version to v{new_version}'")
+        commit_config_change(version_str, config_version)
+        print(f"Committed changes: 'bump version to {version_str}'")
 
-        bump_git_tag(new_version, request.tag_message)
-        print(f"Created Git tag v{new_version}")
+        bump_git_tag(version_str, request.tag_message)
+        print(f"Created Git tag {version_str}")
 
         mutated_local = True
 
         if request.push:
-            push_to_remote(new_version)
+            push_to_remote([version_str])
             print("Pushed commit and tag to remote")
 
         if request.release is not None:
@@ -62,9 +63,9 @@ def bump_version(
                 commits = get_commit_since_tag(base_version)
                 change_log = generate_changelog(commits)
 
-            create_github_release(new_version, change_log, request.draft)
+            create_github_release(version_str, change_log, request.draft)
             draft_str = " (Draft)" if request.draft else ""
-            print(f"Created GitHub Release v{new_version}{draft_str}")
+            print(f"Created GitHub Release {version_str}{draft_str}")
 
     except Exception as e:
         print(f"\n[!] Error during bump execution: {e}")
@@ -72,7 +73,7 @@ def bump_version(
             handle_push_error(
                 f"v{new_version}",
                 request.config_path,
-                remote_name=request.remote_name
+                remote_name=request.remote_name or 'origin'
             )
         return False
 
@@ -80,7 +81,7 @@ def bump_version(
         return True
 
 def handle_push_error(tag_name: str, config_path: Path|None, remote_name: str):
-    print(f"[!] Local repository was modified with tag '{tag_name}'.")
+    print(f"{Color.YELLOW}[!] Local repository was modified with tag '{tag_name}'.{Color.WHITE}")
     undo_request = UndoRequest(
         undo_tag=tag_name,
         remote_name=remote_name,
@@ -88,26 +89,26 @@ def handle_push_error(tag_name: str, config_path: Path|None, remote_name: str):
     )
     do_undo(undo_request)
 
-def format_dry_run_output(request: BumpRequest, new_version: Version, config_version: dict[Path,Version], bump_type: str) -> str:
+def format_dry_run_output(request: BumpRequest, new_version: str, config_version: dict[Path,Version], bump_type: str) -> str:
     config_out = []
     for config_path in config_version.keys():
-        config_out.append(f"Would update {config_path.name} to v{new_version} (DRY RUN)",)
+        config_out.append(f"Would update {config_path.name} to {new_version} (DRY RUN)",)
     config_out_str = '\n'.join(config_out)
 
     output: list[str] = [
         f"Would apply a {bump_type} bump (DRY RUN)",
-        f"Would commit changes: 'bump version to v{new_version}' (DRY RUN)",
+        f"Would commit changes: 'bump version to {new_version}' (DRY RUN)",
         f"{config_out_str}"
-        f"\nWould create Git tag v{new_version} (DRY RUN)",
+        f"\nWould create Git tag {new_version} (DRY RUN)",
     ]
 
     if request.push:
         output.append(f"Would push commit and tag to remote (DRY RUN)")
 
     if request.release:
-        output.append(f"Would create GitHub Release v{new_version} (DRY RUN)")
+        output.append(f"Would create GitHub Release {new_version} (DRY RUN)")
 
-    output.append(f"\nDry run complete for v{new_version} (no changes made)")
+    output.append(f"\nDry run complete for {new_version} (no changes made)")
 
     return "\n".join(output)
 

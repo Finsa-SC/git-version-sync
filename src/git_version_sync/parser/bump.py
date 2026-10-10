@@ -45,6 +45,11 @@ def bump_subparse(subparsers, parent_parser):
         help="Save the GitHub release as a draft (requires --release)",
     )
     bump_parser.add_argument(
+        "--no-prefix",
+        action="store_true",
+        help="Not using prefix.",
+    )
+    bump_parser.add_argument(
         "-n",
         "--dry-run",
         action="store_true",

@@ -1,5 +1,6 @@
 import os
 import subprocess, shutil
+from collections.abc import Iterable
 from pathlib import Path
 from packaging.version import Version
 
@@ -34,21 +35,13 @@ def commit_config_change(new_version: str, config_version: dict[Path,Version]) -
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Git commit {Color.RED}Failed: \n{error_msg}") from e
 
-def push_to_remote(new_version: list[Version|str]|Version, remote_name: str = 'origin') -> None:
+def push_to_remote(new_version: Iterable[str], remote_name: str = 'origin') -> None:
     try:
         command = [
             'git', 'push',
             remote_name, 'HEAD',
+            *new_version
         ]
-
-        if isinstance(new_version, Version):
-            command.append(f"v{new_version}")
-        else:
-            for version in new_version:
-                if isinstance(version, Version):
-                    command.append(f"v{version}")
-                else:
-                    command.append(version)
 
         subprocess.run(
             command,
@@ -82,8 +75,7 @@ def fetch_remote_tags(remote_name: str = 'origin'):
         error_msg = clean_git_error(e)
         raise GitCommandError(f"{Color.RED}Failed to fetch tags from remote: {error_msg}") from e
 
-def create_github_release(version: Version, message: str|None=None, draft: bool=False) -> None:
-    tag_name = f"v{version}"
+def create_github_release(tag_name: str, message: str | None=None, draft: bool=False) -> None:
     command = ['gh', 'release', 'create', tag_name, '--generate-notes']
 
     if not shutil.which('gh'):
@@ -94,7 +86,7 @@ def create_github_release(version: Version, message: str|None=None, draft: bool=
     if draft:
         command.extend(['--draft'])
 
-    push_to_remote(version)
+    push_to_remote([tag_name])
     try:
         subprocess.run(
             command,
@@ -136,12 +128,12 @@ def delete_remote_tag(version: Version, remote_name: str) -> None:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"{Color.RED}Failed to check branch status: {error_msg}") from e
 
-def bump_git_tag(new_version: Version, message: str|None = None) -> None:
+def bump_git_tag(new_version: str, message: str|None = None) -> None:
     msg = message if message and message.strip() else f"bump version to v{new_version}"
     command = [
         'git',
         'tag',
-        '-a', f'v{new_version}',
+        '-a', new_version,
         '-m', msg
     ]
 

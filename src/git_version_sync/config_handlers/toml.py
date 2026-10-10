@@ -17,7 +17,6 @@ class TomlConfigParser(BaseConfigParser):
 
     def __init__(self, config_path: Path):
         super().__init__(config_path)
-        # Variasi lokasi key yang umum di format TOML
         self.possible_keys: list[Tuple[str, ...]] = [
             ("project", "version"),             # PEP 621 (pyproject.toml standar)
             ("tool", "poetry", "version"),      # Poetry
