@@ -46,10 +46,9 @@ def push_to_remote(new_version: list[Version|str]|Version, remote_name: str = 'o
         else:
             for version in new_version:
                 if isinstance(version, Version):
-                    command.append(f"{version}")
+                    command.append(f"v{version}")
                 else:
                     command.append(version)
-        exit(0)
 
         subprocess.run(
             command,
