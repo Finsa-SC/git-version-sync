@@ -7,7 +7,7 @@ from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteE
 from git_version_sync.utils import Color
 
 
-def commit_config_change(new_version: Version, config_version: dict[Path,Version]) -> None:
+def commit_config_change(new_version: str, config_version: dict[Path,Version]) -> None:
     if not config_version:
         return
 
@@ -19,7 +19,7 @@ def commit_config_change(new_version: Version, config_version: dict[Path,Version
     )
 
     try:
-        commit_msg = f"chore(version): bump version to v{new_version}"
+        commit_msg = f"chore(version): bump version to {new_version}"
         subprocess.run(
             ['git', 'commit', '-m', commit_msg],
             capture_output=True,
