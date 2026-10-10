@@ -154,17 +154,19 @@ def do_bump(request: BumpRequest) -> str:
             if v is not None
         )
     else:
-        base_version = parse_highest_version(local_tags | {f"v{config_tag}"})
+        base_version = parse_highest_version(local_tags | {config_tag})
 
+    str_version = f"{base_version}" if request.no_prefix else f"v{base_version}"
     # if run without bump type, will be interactive
     if request.bump_type is None:
-        bump_type, reason = detect_bump_type(base_version)
+        bump_type, reason = detect_bump_type(str_version)
         next_version = calculate_next_version(base_version, bump_type)
 
         # Interactive
         if not request.dry_run:
             print(reason)
-            print(f"Suggested bump: {bump_type} (v{base_version} -> v{next_version})")
+            next_ver_str = next_version if request.no_prefix else f"v{next_version}"
+            print(f"Suggested bump: {bump_type} ({str_version} -> {next_ver_str})")
 
             confirm = input("Apply this version bump? [Y/n]: ").lower()
             print("")
@@ -174,7 +176,7 @@ def do_bump(request: BumpRequest) -> str:
 
     # Immediately detect version without interactive confirmation
     elif request.bump_type == "auto":
-        bump_type, _ = detect_bump_type(base_version)
+        bump_type, _ = detect_bump_type(str_version)
 
     # Manual type bump
     else:
@@ -186,7 +188,7 @@ def do_bump(request: BumpRequest) -> str:
     if request.dry_run:
         return format_dry_run_output(
             request,
-            new_version,
+            str_version,
             config_version,
             bump_type=bump_type
         )
@@ -198,4 +200,5 @@ def do_bump(request: BumpRequest) -> str:
         config_version
     )
 
-    return f"\nSuccess bump version to v{new_version}" if bump_status else "\nFailed to bump version"
+    new_str_version = f"{new_version}" if request.no_prefix else f"v{new_version}"
+    return f"\nSuccess bump version to {new_str_version}" if bump_status else "\nFailed to bump version"

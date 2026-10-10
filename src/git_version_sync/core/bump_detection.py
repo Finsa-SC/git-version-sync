@@ -25,7 +25,7 @@ def calculate_next_version(base_version: Version, bump_type: BumpType) -> str:
         case "patch":
             return get_new_patch(base_version)
 
-def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
+def detect_bump_type(base_version: str) -> tuple[BumpType, str]:
     # Regex String Patterns
     pat_major = r"(BREAKING[ -]CHANGE:|^\w+(\([\w\.-]+\))?!:)"
     pat_minor = r"^feat(\([\w\.-]+\))?:"
@@ -35,7 +35,7 @@ def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
     minor_count = 0
     patch_count = 0
 
-    for commit in get_commit_since_tag(base_version):
+    for commit in get_commit_since_tag(Version(base_version)):
         commit_str = commit['message'].strip()
         if not commit_str:
             continue
@@ -50,15 +50,15 @@ def detect_bump_type(base_version: Version) -> tuple[BumpType, str]:
             patch_count += 1
 
     if major_count > 0:
-        reason = f"Detected {major_count} BREAKING CHANGE commit(s) since v{base_version}"
+        reason = f"Detected {major_count} BREAKING CHANGE commit(s) since {base_version}"
         return "major", reason
 
     if minor_count > 0:
-        reason = f"Detected {minor_count} 'feat' commit(s) since v{base_version}"
+        reason = f"Detected {minor_count} 'feat' commit(s) since {base_version}"
         return "minor", reason
 
     if patch_count > 0:
-        reason = f"Detected {patch_count} 'fix' commit(s) since v{base_version}"
+        reason = f"Detected {patch_count} 'fix' commit(s) since {base_version}"
         return "patch", reason
 
     raise GitVersionSyncError(
