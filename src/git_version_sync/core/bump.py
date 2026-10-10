@@ -153,7 +153,7 @@ def do_bump(request: BumpRequest) -> str:
             if v is not None
         )
     else:
-        base_version = parse_highest_version(local_tags | set(f"v{config_tag}"))
+        base_version = parse_highest_version(local_tags | {f"v{config_tag}"})
 
     # if run without bump type, will be interactive
     if request.bump_type is None:
