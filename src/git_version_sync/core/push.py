@@ -57,7 +57,7 @@ def do_push(request: PushRequest):
     # If using --all flag
     if request.push_all:
         semver_tags, non_semver_tags = seperate_non_semver(unpush_tags)
-        pending_tags.extend(Version(ver) for ver in semver_tags)
+        pending_tags.extend(semver_tags)
         pending_tags.extend(non_semver_tags)
 
     # If user input tag(s) manually
