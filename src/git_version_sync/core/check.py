@@ -55,9 +55,9 @@ def is_all_config_match(configs: dict[Path, Version]) -> bool:
 def get_config_mismatch_str(config_items: dict[Path,Version], local_highest: Version) -> str:
     config_out = []
     for config, ver in config_items.items():
-        config_out.append(f"{str(config.name):<24}: v{ver}")
+        config_out.append(f"{str(config.name):<24}: {ver}")
     config_str = "\n".join(config_out)
-    local_highest_str = f"v{local_highest}" if local_highest else 'unknown'
+    local_highest_str = f"{local_highest}" if local_highest else 'unknown'
     return (
         f"Version mismatch\n"
         f"Git Local\t\t: {local_highest_str}\n"
@@ -94,7 +94,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     if no_fetch:
         if all_match:
             return (
-                f"Version is synchronized with highest local tag (v{config_tag})\n"
+                f"Version is synchronized with highest local tag ({config_tag})\n"
                 f"(Skipped remote fetch. Remote status may be out of date.)"
             )
 
@@ -103,14 +103,14 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
 
     output = []
 
-    highest_remote = f"v{parse_highest_version(remote_tags)}" if remote_tags else "None (no remote configured)"
+    highest_remote = f"{parse_highest_version(remote_tags)}" if remote_tags else "None (no remote configured)"
 
     missing_in_local = get_missing_in_local_tags(remote_tags, local_tags)
     missing_in_remote = get_missing_in_remote_tags(remote_tags, local_tags)
 
     # If highest local tag match with config version
     if highest_local_version == config_tag and not (missing_in_local or missing_in_remote):
-        output.append(f"Version ({config_tag}) is synchronized with local tag 'v{config_tag}'.")
+        output.append(f"Version ({config_tag}) is synchronized with local tag '{config_tag}'.")
 
     else:
         config_msg = get_config_mismatch_str(config_version, highest_local_version)
@@ -129,7 +129,8 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
             if missing_in_local:
                 output.append(f"\nNew tag(s) found on remote ({remote_name}): ")
                 for tag in sorted(missing_in_local):
-                    output.append(f"  - {tag}")
+                    clean_tag = tag.removeprefix('v')
+                    output.append(f"  - {clean_tag}")
 
             ## Warning and hint if local and remote tag is not valid
             if missing_in_local:
