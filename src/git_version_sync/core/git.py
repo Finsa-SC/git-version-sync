@@ -154,6 +154,25 @@ def bump_git_tag(new_version: str, message: str|None = None, force: bool = False
 
         raise GitCommandError(f"{Color.RED}Failed to create Git tag:\n{error_msg}") from e
 
+def get_current_remote() -> str:
+    command = [
+        "git", "config",
+        "--get", "branch.$(git branch --show-current).remote"
+    ]
+
+    try:
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=True
+        )
+
+        return result.stdout.strip()
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"{Color.RED}Failed to get current remote: {error_msg}") from e
+
 def get_tag_commit(tag_name: str) -> str | None:
     command = ["git", "rev-parse", f"{tag_name}^{{commit}}"]
 
