@@ -35,13 +35,16 @@ def commit_config_change(new_version: str, config_version: dict[Path,Version]) -
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Git commit {Color.RED}Failed: \n{error_msg}") from e
 
-def push_to_remote(new_version: Iterable[str], remote_name: str = 'origin') -> None:
+def push_to_remote(new_version: Iterable[str], remote_name: str = 'origin', force: bool = False) -> None:
     try:
         command = [
             'git', 'push',
             remote_name, 'HEAD',
             *new_version
         ]
+
+        if force:
+            command.append("-f")
 
         subprocess.run(
             command,
