@@ -26,6 +26,12 @@ from ..models import BumpRequest, UndoRequest
 from ..utils import get_config_version, Color
 
 
+def set_latest_tag() -> None:
+    bump_git_tag(
+        new_version="latest",
+        message="Update latest tag"
+    )
+
 def bump_config_version(new_version: Version, config_path: Path) -> None:
     config_parser = get_config_parser(config_path)
     config_parser.update_version(new_version)
