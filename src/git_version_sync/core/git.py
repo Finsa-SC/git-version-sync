@@ -89,7 +89,7 @@ def fetch_remote_tags(remote_name: str = get_current_remote()):
             f"{Color.BLUE}Hint: Add a remote using 'git remote add {remote_name} <url>'"
         )
 
-    command = ['git', 'fetch', '--tags', remote_name]
+    command = ['git', 'fetch', '--tags', '--force', remote_name]
 
     try:
         subprocess.run(
@@ -177,6 +177,18 @@ def bump_git_tag(new_version: str, message: str|None = None, force: bool = False
             raise GitCommandError(f"Tag 'v{new_version}' already exists in this repository.") from e
 
         raise GitCommandError(f"{Color.RED}Failed to create Git tag:\n{error_msg}") from e
+
+def set_latest_tag(target_version: str) -> None:
+    try:
+        subprocess.run(
+            ['git', 'tag', '-f', 'latest', target_version],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"{Color.RED}Failed to update 'latest' tag:\n{error_msg}") from e
 
 def get_tag_commit(tag_name: str) -> str | None:
     command = ["git", "rev-parse", f"{tag_name}^{{commit}}"]

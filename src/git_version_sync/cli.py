@@ -58,6 +58,7 @@ def main():
                     tags=args.tags,
                     push_all=args.all,
                     release=args.release,
+                    push_latest=args.latest,
                     remote_name=args.remote,
                 )
                 do_push(

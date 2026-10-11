@@ -17,6 +17,12 @@ def push_subparse(subparsers, parent_parser):
         help="Push all local tags to remote"
     )
     push_parser.add_argument(
+        "-l",
+        "--latest",
+        action="store_true",
+        help="Force update and push the 'latest' tag to the latest SemVer commit"
+    )
+    push_parser.add_argument(
         "-r",
         "--release",
         nargs="?",
