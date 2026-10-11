@@ -8,6 +8,30 @@ from git_version_sync.exception import GitCommandError, GitPushError, GitRemoteE
 from git_version_sync.utils import Color
 
 
+def get_current_remote() -> str:
+    try:
+        branch_res = subprocess.run(
+            ['git', 'branch', '--show-current'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        current_branch = branch_res.stdout.strip()
+        if not current_branch:
+            return "origin" # Default fallback if detached HEAD
+
+        remote_res = subprocess.run(
+            ['git', 'config', '--get', f'branch.{current_branch}.remote'],
+            capture_output=True,
+            text=True,
+            check=True
+        )
+        return remote_res.stdout.strip() or "origin"
+
+    except subprocess.CalledProcessError as e:
+        error_msg = clean_git_error(e)
+        raise GitCommandError(f"{Color.RED}Failed to get current remote: {error_msg}") from e
+
 def commit_config_change(new_version: str, config_version: dict[Path,Version]) -> None:
     if not config_version:
         return
@@ -56,7 +80,7 @@ def push_to_remote(new_version: Iterable[str], remote_name: str = 'origin', forc
         error_msg = clean_git_error(e)
         raise GitPushError(f"{Color.RED}Failed to push to remote: \n{error_msg}") from e
 
-def fetch_remote_tags(remote_name: str = 'origin'):
+def fetch_remote_tags(remote_name: str = get_current_remote()):
     # Validate git structure
     get_git_path()
     if not has_remote(remote_name):
@@ -153,25 +177,6 @@ def bump_git_tag(new_version: str, message: str|None = None, force: bool = False
             raise GitCommandError(f"Tag 'v{new_version}' already exists in this repository.") from e
 
         raise GitCommandError(f"{Color.RED}Failed to create Git tag:\n{error_msg}") from e
-
-def get_current_remote() -> str:
-    command = [
-        "git", "config",
-        "--get", "branch.$(git branch --show-current).remote"
-    ]
-
-    try:
-        result = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-
-        return result.stdout.strip()
-    except subprocess.CalledProcessError as e:
-        error_msg = clean_git_error(e)
-        raise GitCommandError(f"{Color.RED}Failed to get current remote: {error_msg}") from e
 
 def get_tag_commit(tag_name: str) -> str | None:
     command = ["git", "rev-parse", f"{tag_name}^{{commit}}"]

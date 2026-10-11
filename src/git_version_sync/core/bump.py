@@ -11,7 +11,7 @@ from .git import (
     get_commit_since_tag,
     bump_git_tag,
     get_local_tags,
-    check_remote_connection
+    check_remote_connection, get_current_remote
 )
 from .check import (
     parse_highest_version,
@@ -29,7 +29,8 @@ from ..utils import get_config_version, Color
 def set_latest_tag() -> None:
     bump_git_tag(
         new_version="latest",
-        message="Update latest tag"
+        message="Update latest tag",
+        force=True
     )
 
 def bump_config_version(new_version: Version, config_path: Path) -> None:
@@ -59,7 +60,7 @@ def bump_version(
         mutated_local = True
 
         if request.push:
-            push_to_remote([version_str])
+            push_to_remote([version_str], request.remote_name or 'origin')
             print("Pushed commit and tag to remote")
 
         if request.release is not None:
@@ -130,8 +131,12 @@ def do_bump(request: BumpRequest) -> str:
     config_version = get_config_version(request.config_path)
     config_tag = parse_highest_version(set(config_version.values()))
 
-    if request.push or request.remote_name:
-        remote_name = request.remote_name if request.remote_name else 'origin'
+    remote_name = "origin"
+    use_remote = bool(request.push or request.remote_name)
+    if use_remote:
+        remote_name = get_current_remote()
+
+    if use_remote:
         check_remote_connection(remote_name)
 
         remote_tags = get_remote_tags(remote_name=remote_name)
@@ -205,6 +210,14 @@ def do_bump(request: BumpRequest) -> str:
         new_version,
         config_version
     )
+
+    if request.make_latest:
+        set_latest_tag()
+        print("Set the 'latest' tag to the newest local tag.")
+
+        if request.push:
+            push_to_remote(["latest"],  remote_name=remote_name, force=request.force)
+            print("Pushed 'latest' tag to remote.")
 
     new_str_version = f"{new_version}" if request.no_prefix else f"v{new_version}"
     return f"\nSuccess bump version to {new_str_version}" if bump_status else "\nFailed to bump version"
