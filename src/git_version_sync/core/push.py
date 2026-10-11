@@ -53,7 +53,7 @@ def do_push(request: PushRequest):
     if latest_tags is None:
         raise GitPushError("Failed to push to remote, No local tag found.")
 
-    pending_tags: list[Version|str] = []
+    pending_tags: list[str] = []
     # If using --all flag
     if request.push_all:
         semver_tags, non_semver_tags = seperate_non_semver(unpush_tags)
@@ -79,11 +79,11 @@ def do_push(request: PushRequest):
             )
 
         clean_unpush_tags = seperate_non_semver(unpush_tags)
-        pending_tags.extend(Version(ver) for ver in request.tags if ver in clean_unpush_tags)
+        pending_tags.extend(ver for ver in request.tags if ver in clean_unpush_tags)
 
     # If user doesn't input any tag, auto use latest lag
-    elif f"v{latest_tags}" in unpush_tags:
-        pending_tags.append(latest_tags)
+    elif str(latest_tags) in unpush_tags:
+        pending_tags.append(str(latest_tags))
 
     if not pending_tags:
         if request.tags:
@@ -91,7 +91,6 @@ def do_push(request: PushRequest):
         else:
             print(f"Nothing to push: all local tags already exist on {remote_name}.")
         return
-
     print(f"Pushing tag(s) to remote: {', '.join(f'v{ver}' for ver in pending_tags)}")
     push_to_remote(pending_tags, remote_name)
 
@@ -110,7 +109,7 @@ def do_push(request: PushRequest):
             if request.release.strip():
                 change_log = request.release
             else:
-                prev_tag = get_previous_tag(target_version, local_tags)
+                prev_tag = get_previous_tag(Version(target_version), local_tags)
                 commits = get_commit_since_tag(prev_tag, target_version)
                 change_log = generate_changelog(commits)
 
