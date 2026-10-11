@@ -18,5 +18,5 @@ def sync_subparse(subparsers, parent_parser):
     sync_group.add_argument(
         "--no-prefix",
         action="store_true",
-        help="Not using prefix.",
+        help="Do not prepend 'v' to version tags when syncing",
     )

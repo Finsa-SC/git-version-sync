@@ -47,13 +47,13 @@ def bump_subparse(subparsers, parent_parser):
     bump_parser.add_argument(
         "--no-prefix",
         action="store_true",
-        help="Not using prefix.",
+        help="Do not include the 'v' prefix in the version tag",
     )
     bump_parser.add_argument(
         "-l",
         "--latest",
         action="store_true",
-        help="Make additional floating tag.",
+        help="Update the 'latest' tag to point to the newly bumped version",
     )
     bump_parser.add_argument(
         "-n",
