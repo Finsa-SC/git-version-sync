@@ -23,6 +23,7 @@ def main():
                     draft=args.draft,
                     dry_run=args.dry_run,
                     no_prefix=args.no_prefix,
+                    make_latest=args.latest,
                     remote_name=args.remote
                 )
                 print(do_bump(

@@ -50,6 +50,12 @@ def bump_subparse(subparsers, parent_parser):
         help="Not using prefix.",
     )
     bump_parser.add_argument(
+        "-l",
+        "--latest",
+        action="store_true",
+        help="Make additional floating tag.",
+    )
+    bump_parser.add_argument(
         "-n",
         "--dry-run",
         action="store_true",

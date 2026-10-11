@@ -15,4 +15,5 @@ class BumpRequest:
     draft       : bool = False
     dry_run     : bool = False
     no_prefix   : bool = False
+    make_latest : bool = False
     remote_name : str|None = None
