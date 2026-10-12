@@ -64,7 +64,8 @@ def get_config_mismatch_str(config_items: dict[Path,Version], local_highest: Ver
         f"{config_str}"
     )
 
-def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "origin") -> str:
+# Return status code and description
+def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "origin") -> tuple[int, str]:
     local_tags = get_local_tags()
 
     remote_tags = set()
@@ -93,13 +94,13 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     # Offline check
     if no_fetch:
         if all_match:
-            return (
+            return 0, (
                 f"Version is synchronized with highest local tag ({config_tag})\n"
                 f"(Skipped remote fetch. Remote status may be out of date.)"
             )
 
         else:
-            return get_config_mismatch_str(config_version, highest_local_version)
+            return 1, get_config_mismatch_str(config_version, highest_local_version)
 
     output = []
 
@@ -110,9 +111,11 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
 
     # If highest local tag match with config version
     if highest_local_version == config_tag and not (missing_in_local or missing_in_remote):
+        status_code = 0
         output.append(f"Version ({config_tag}) is synchronized with local tag '{config_tag}'.")
 
     else:
+        status_code = 1
         config_msg = get_config_mismatch_str(config_version, highest_local_version)
         output.append("")
         output.append(config_msg)
@@ -141,4 +144,4 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
             elif missing_in_remote:
                 output.append(f"\n{Color.BLUE}Hint: Run 'git-version-sync push' to sync local tags to remote.{Color.WHITE}")
 
-    return "\n".join(output)
+    return status_code, "\n".join(output)
