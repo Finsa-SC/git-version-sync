@@ -7,7 +7,7 @@ from .git import (
     fetch_remote_tags,
     get_commit_since_tag,
     create_github_release,
-    get_local_tags
+    get_local_tags, get_current_remote
 )
 from ..exception import GitPushError
 from ..models import PushRequest
@@ -41,7 +41,7 @@ def seperate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
     return semver, non_semver
 
 def do_push(request: PushRequest):
-    remote_name = request.remote_name if request.remote_name else 'origin'
+    remote_name = request.remote_name if request.remote_name else get_current_remote()
     fetch_remote_tags(remote_name)
 
     local_tags = get_local_tags()

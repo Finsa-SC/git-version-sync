@@ -80,7 +80,7 @@ def push_to_remote(new_version: Iterable[str], remote_name: str = 'origin', forc
         error_msg = clean_git_error(e)
         raise GitPushError(f"{Color.RED}Failed to push to remote: \n{error_msg}") from e
 
-def fetch_remote_tags(remote_name: str = get_current_remote()):
+def fetch_remote_tags(remote_name: str = "origin"):
     # Validate git structure
     get_git_path()
     if not has_remote(remote_name):
