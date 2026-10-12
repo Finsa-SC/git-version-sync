@@ -11,6 +11,7 @@ from .git import (
 )
 from ..exception import GitPushError
 from ..models import PushRequest
+from ..utils import Color
 
 
 def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|None:
@@ -54,6 +55,12 @@ def do_push(request: PushRequest):
     if latest_tags is None:
         raise GitPushError("Failed to push to remote, No local tag found.")
 
+    if (latest := f"v{latest_tags}") in local_tags:
+        latest_tags = latest
+    elif (latest := f"{latest_tags}") in unpush_tags:
+        latest_tags = latest
+
+
     pending_tags: list[str] = []
     # If using --all flag
     if request.push_all:
@@ -82,18 +89,17 @@ def do_push(request: PushRequest):
         pending_tags.extend(ver for ver in request.tags if ver in unpush_tags)
 
     # If user doesn't input any tag, auto use latest lag
-    else:
-        if (latest := f"v{latest_tags}") in local_tags:
-            pending_tags.append(latest)
-
-        elif (latest := f"{latest_tags}") in local_tags:
-            pending_tags.append(latest)
+    elif latest_tags in unpush_tags:
+        pending_tags.append(latest)
 
     if not pending_tags:
         if request.tags:
             print(f"Already on {remote_name}: {', '.join(request.tags)}")
         else:
-            print(f"Nothing to push: all local tags already exist on {remote_name}.")
+            print(f"Nothing to push: {latest_tags} (highest tag) is already exist on {remote_name}.")
+            if unpush_tags:
+                print(f"{len(unpush_tags)} other local tag(s) are not in {remote_name} yet: {', '.join(unpush_tags)}")
+                print(f"{Color.BLUE}HINT: Use 'git-version-sync push --all' to send them, or 'push <tag> ...' to choose.")
         return
 
     if request.push_latest:
