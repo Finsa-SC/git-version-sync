@@ -82,8 +82,12 @@ def do_push(request: PushRequest):
         pending_tags.extend(ver for ver in request.tags if ver in unpush_tags)
 
     # If user doesn't input any tag, auto use latest lag
-    elif str(latest_tags) in unpush_tags:
-        pending_tags.append(str(latest_tags))
+    else:
+        if (latest := f"v{latest_tags}") in local_tags:
+            pending_tags.append(latest)
+
+        elif (latest := f"{latest_tags}") in local_tags:
+            pending_tags.append(latest)
 
     if not pending_tags:
         if request.tags:
