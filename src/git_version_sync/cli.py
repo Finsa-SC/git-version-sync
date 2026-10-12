@@ -43,11 +43,15 @@ def main():
                 )
 
             case 'check':
-                print(do_check(
+                code, result = do_check(
                     config_name=args.config,
                     no_fetch=args.no_fetch,
                     remote_name=args.remote or "origin"
-                ))
+                )
+                print(result)
+                if code == 1:
+                    exit(0)
+                exit(1)
 
             case 'push':
                 # User Input Validation
