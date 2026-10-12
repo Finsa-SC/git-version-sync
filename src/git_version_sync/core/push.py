@@ -104,7 +104,7 @@ def do_push(request: PushRequest):
 
     number_of_tag = len(pending_tags)
     if number_of_tag > 1:
-        print(f"Pushed: {number_of_tag} tags to origin.")
+        print(f"Pushed: {number_of_tag} tags to {remote_name}.")
     else:
         print(f"Pushed: {pending_tags[0]} -> {remote_name}.")
 
