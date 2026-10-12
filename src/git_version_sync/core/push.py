@@ -46,7 +46,7 @@ def do_push(request: PushRequest):
     fetch_remote_tags(remote_name)
 
     local_tags = get_local_tags()
-    remote_tags = get_remote_tags()
+    remote_tags = get_remote_tags(remote_name)
     unpush_tags = get_missing_in_remote_tags(remote_tags, local_tags)
     latest_tags = parse_highest_version(local_tags)
 
