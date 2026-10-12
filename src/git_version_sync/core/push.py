@@ -29,6 +29,7 @@ def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|N
 
     return max(previous_tag)
 
+# Return semver and non-semver
 def seperate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
     semver = set()
     non_semver = set()
@@ -78,8 +79,7 @@ def do_push(request: PushRequest):
                 f"Nothing was pushed."
             )
 
-        clean_unpush_tags = seperate_non_semver(unpush_tags)
-        pending_tags.extend(ver for ver in request.tags if ver in clean_unpush_tags)
+        pending_tags.extend(ver for ver in request.tags if ver in unpush_tags)
 
     # If user doesn't input any tag, auto use latest lag
     elif str(latest_tags) in unpush_tags:
