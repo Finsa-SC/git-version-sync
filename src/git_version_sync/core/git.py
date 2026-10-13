@@ -156,7 +156,7 @@ def delete_remote_tag(version: str, remote_name: str) -> None:
         raise GitCommandError(f"{Color.RED}Failed to check branch status: {error_msg}") from e
 
 def bump_git_tag(new_version: str, message: str|None = None, force: bool = False) -> None:
-    msg = message if message and message.strip() else f"bump version to v{new_version}"
+    msg = message if message and message.strip() else f"bump version to {new_version}"
 
     command = ['git', 'tag', '-a', ]
     if force:

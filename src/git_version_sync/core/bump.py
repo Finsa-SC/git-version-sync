@@ -189,13 +189,13 @@ def do_bump(request: BumpRequest) -> str:
     else:
         bump_type = request.bump_type
 
-    new_version = Version(calculate_next_version(base_version, bump_type))
+    new_version = calculate_next_version(base_version, bump_type)
 
     # Dry run
     if request.dry_run:
         return format_dry_run_output(
             request,
-            str_version,
+            f"{with_prefix}{new_version}",
             config_version,
             bump_type=bump_type
         )
@@ -203,7 +203,7 @@ def do_bump(request: BumpRequest) -> str:
     bump_status = bump_version(
         request,
         base_version,
-        new_version,
+        Version(new_version),
         config_version
     )
 
