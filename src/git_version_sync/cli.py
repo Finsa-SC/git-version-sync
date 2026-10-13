@@ -49,7 +49,7 @@ def main():
                     remote_name=args.remote or "origin"
                 )
                 print(result)
-                if code == 1:
+                if code == 0:
                     exit(0)
                 exit(1)
 

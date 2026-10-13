@@ -18,11 +18,12 @@ def parse_highest_version(*items: Iterable[str]) -> str|None:
         except Exception:
             continue
 
+    if not version_map:
+        return None
+
     highest = max(version_map.keys())
 
-    if highest:
-        return version_map[highest]['version']
-    return None
+    return version_map[highest]['version']
 
 def get_config_tag(config_path: Path) -> Version:
     config_parser = get_config_parser(config_path)
@@ -74,7 +75,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     # Check if remote is enable and skip remote if remote cannot be reach
     if not no_fetch:
         if not has_remote(remote_name):
-            print(f"{Color.YELLOW}Warning: Remote 'origin' not found. Skipping remote check.{Color.WHITE}")
+            print(f"{Color.YELLOW}Warning: Remote '{remote_name}' not found. Skipping remote check.{Color.WHITE}")
             skip_remote = True
 
         else:
