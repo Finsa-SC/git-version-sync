@@ -122,7 +122,7 @@ def do_bump(request: BumpRequest) -> str:
         )
 
     config_version = get_config_version(request.config_path)
-    config_tag = parse_highest_version(set(f"{config_version.values()}"))
+    config_tag = parse_highest_version([str(ver) for ver in config_version.values()])
     with_prefix = "" if request.no_prefix else "v"
 
     # Get default remote if use push or remote flag
