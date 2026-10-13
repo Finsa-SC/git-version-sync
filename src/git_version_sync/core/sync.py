@@ -47,16 +47,16 @@ def sync_version(
         if highest_local_tag and (not all_config_match or highest_local_tag > Version(config_tag)):
             for config_path in config_version.keys():
                 bump_config_version(Version(target_version), config_path)
-                print(f"Synced {config_path.name} version to match v{target_version}.")
+                print(f"Synced {config_path.name} version to match {target_version}.")
 
         elif highest_local_tag and highest_local_tag < Version(config_tag):
             bump_git_tag(target_version)
-            print(f"Synced Git tag to match with v{target_version}.")
+            print(f"Synced Git tag to match with {target_version}.")
 
         else:
             return
 
-        print(f"\nSynced workspace to highest version v{target_version}.")
+        print(f"\nSynced workspace to highest version {target_version}.")
 
 def sync_remote(remote_name: str) -> None:
     # Validate remote
@@ -75,7 +75,7 @@ def sync_remote(remote_name: str) -> None:
         return
 
     local_tags = get_local_tags()
-    tag_name = f"v{highest_remote_tag}"
+    tag_name = highest_remote_tag
     in_local = tag_name in local_tags
 
     commit_hash = (

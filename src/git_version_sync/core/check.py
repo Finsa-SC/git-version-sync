@@ -95,7 +95,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
 
     # Offline check
     if no_fetch:
-        if all_match:
+        if Version(highest_local_version) == config_tag and all_match:
             return 0, (
                 f"Version is synchronized with highest local tag ({config_tag})\n"
                 f"(Skipped remote fetch. Remote status may be out of date.)"
@@ -112,9 +112,9 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     missing_in_remote = get_missing_in_remote_tags(remote_tags, local_tags)
 
     # If highest local tag match with config version
-    if highest_local_version == config_tag and not (missing_in_local or missing_in_remote):
+    if Version(highest_local_version) == config_tag and not (missing_in_local or missing_in_remote):
         status_code = 0
-        output.append(f"Version ({config_tag}) is synchronized with local tag '{config_tag}'.")
+        output.append(f"Version ({config_tag}) is synchronized with local tag '{highest_local_version}'.")
 
     else:
         status_code = 1
