@@ -39,7 +39,7 @@ def sync_version(
 
     else:
         if highest_local_tag:
-            target_version = str(parse_highest_version([config_tag, highest_local_tag]))
+            target_version = parse_highest_version([config_tag, str(highest_local_tag)])
         else:
             target_version = config_tag
 
@@ -102,28 +102,24 @@ def do_sync(request: SyncRequest) -> None:
     config_list = get_config_version(request.config_name)
     local_tags = get_local_tags()
 
-    highest_local_tag = parse_highest_version(local_tags)
-
     unique_version = {}
     for config_path, ver in config_list.items():
-        unique_version[get_config_tag(config_path)] = ver
+        unique_version[get_config_tag(config_path)] = str(ver)
 
-    config_tag = str(
-        parse_highest_version(set(unique_version.values()))
-    )
+    config_tag = parse_highest_version(set(unique_version.values()))
+    if not local_tags:
+        print("No local git tag found.")
+        bump_git_tag(config_tag)
+        print(f"Synced version from config file. Created tag: v{config_tag}")
+        return
+
+    highest_local_tag = Version(parse_highest_version(local_tags))
 
     if not config_tag:
         raise ConfigFileVersionError(
             f"No config tag found."
         )
 
-    print(config_tag)
-    print(highest_local_tag)
-    if not local_tags:
-        print("No local git tag found.")
-        bump_git_tag(config_tag)
-        print(f"Synced version from config file. Created tag: v{config_tag}")
-        return
 
     elif Version(config_tag) == highest_local_tag and len(unique_version) == 1:
         print(f"Already in sync at (v{config_tag})")

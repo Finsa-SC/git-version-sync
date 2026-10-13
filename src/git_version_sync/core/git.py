@@ -125,8 +125,8 @@ def create_github_release(tag_name: str, message: str | None=None, draft: bool=F
         error_msg = clean_git_error(e)
         raise GitCommandError(f"{Color.RED}Failed to create release tag: \n{error_msg}") from e
 
-def delete_tag(version: Version) -> None:
-    command = ['git', 'tag', '-d', f"v{version}"]
+def delete_tag(version: str) -> None:
+    command = ['git', 'tag', '-d', version]
 
     try:
         subprocess.run(
@@ -140,8 +140,8 @@ def delete_tag(version: Version) -> None:
         error_msg = clean_git_error(e)
         raise GitCommandError(f"{Color.RED}Failed to check branch status: {error_msg}") from e
 
-def delete_remote_tag(version: Version, remote_name: str) -> None:
-    command = ['git', 'push', remote_name, '--delete', f"v{version}"]
+def delete_remote_tag(version: str, remote_name: str) -> None:
+    command = ['git', 'push', remote_name, '--delete', version]
 
     try:
         subprocess.run(

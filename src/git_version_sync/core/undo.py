@@ -15,20 +15,21 @@ from git_version_sync.utils import get_config_version
 
 
 def get_previous_version(version_list: set[str]) -> Version|None:
-    parsed_versions = []
+    versions_map = {}
 
     for ver in version_list:
         try:
-            parsed_versions.append(Version(ver.lstrip("v")))
+            has_prefix = ver.startswith('v')
+            versions_map[Version(ver)] = {'version': ver, 'has_prefix': has_prefix}
 
         except InvalidVersion:
             continue
 
-    sorted_tags = sorted(parsed_versions)
+    sorted_tags = sorted(versions_map.keys())
 
     if len(sorted_tags) <= 1:
         return None
-    return sorted_tags[-2]
+    return versions_map[sorted_tags[-2]]['version']
 
 def do_undo(request: UndoRequest) -> None:
     from git_version_sync.core.bump import bump_config_version
@@ -45,23 +46,22 @@ def do_undo(request: UndoRequest) -> None:
     if latest_tag is None:
         raise GitVersionSyncError("No local tag found.")
 
-    target_tag = Version(request.undo_tag.lstrip('v')) if request.undo_tag else latest_tag
+    target_tag = request.undo_tag if request.undo_tag else latest_tag
     is_latest = (target_tag == latest_tag)
 
     previous_version = get_previous_version(local_tags)
 
     # User confirmation
     if not request.force:
-        target_str = f"v{target_tag}"
         remote_info = " and REMOTE" if request.remote_name else ""
-        confirm = input(f"Are you sure you want to undo tag {target_str} (LOCAL{remote_info}) and revert to v{previous_version}? [y/N]: ").strip().lower()
+        confirm = input(f"Are you sure you want to undo tag {target_tag} (LOCAL{remote_info}) and revert to {previous_version}? [y/N]: ").strip().lower()
         print()
         if confirm not in ["y", "yes", "yeah", "ye", "yee"]:
             print("Undo operation canceled.")
             return
 
     if is_latest:
-        tag_commit = get_tag_commit(f"v{target_tag}")
+        tag_commit = get_tag_commit(target_tag)
         head_commit = get_head_commit()
 
         if tag_commit and tag_commit == head_commit:
@@ -72,27 +72,27 @@ def do_undo(request: UndoRequest) -> None:
             for config_path in config_version.keys():
                 bump_config_version(previous_version, config_path)
 
-                print(f"Reverted {config_path.name} version to 'v{previous_version}'.")
+                print(f"Reverted {config_path.name} version to '{previous_version}'.")
         else:
             print(f"Skipped config revert (no previous tag found).")
 
     else:
-        print(f"Tag v{target_tag} is not the latest version (current: v{latest_tag}).")
+        print(f"Tag {target_tag} is not the latest version (current: {latest_tag}).")
         print(f"Skipped resetting config and git commit to preserve history.")
 
     if request.remote_name:
         if target_tag not in get_remote_tags(request.remote_name):
-            print(f"Skipped remote tag deletion (tag 'v{target_tag}' not found on remote).")
+            print(f"Skipped remote tag deletion (tag '{target_tag}' not found on remote).")
         else:
             delete_remote_tag(target_tag, request.remote_name)
-            print(f"Deleted remote tag 'v{target_tag}'.")
+            print(f"Deleted remote tag '{target_tag}'.")
 
     delete_tag(target_tag)
-    print(f"Deleted local tag 'v{target_tag}'.")
+    print(f"Deleted local tag '{target_tag}'.")
 
     # Check deleted tag in remote
     remote_tags = get_remote_tags()
-    if not request.remote_name and (f"v{target_tag}" in remote_tags or str(target_tag) in remote_tags):
-        print(f"Note: v{target_tag} still exists on remote. Run with '-R' to delete it from remote.")
+    if not request.remote_name and (f"{target_tag}" in remote_tags or str(target_tag) in remote_tags):
+        print(f"Note: {target_tag} still exists on remote. Run with '-R' to delete it from remote.")
 
-    print(f"\nSuccessfully reverted version from 'v{latest_tag}' -> 'v{previous_version}'")
+    print(f"\nSuccessfully reverted version from '{latest_tag}' -> '{previous_version}'")

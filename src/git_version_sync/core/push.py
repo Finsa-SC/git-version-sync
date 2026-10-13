@@ -42,6 +42,8 @@ def seperate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
 
     return semver, non_semver
 
+# def confirm_latest_update(remote_tags: set[str], local_tags: set[str]):
+
 def do_push(request: PushRequest):
     remote_name = request.remote_name if request.remote_name else get_current_remote()
     fetch_remote_tags(remote_name)
@@ -49,17 +51,11 @@ def do_push(request: PushRequest):
     local_tags = get_local_tags()
     remote_tags = get_remote_tags(remote_name)
     unpush_tags = get_missing_in_remote_tags(remote_tags, local_tags)
-    latest_tags = parse_highest_version(local_tags)
+    latest_local_tag = parse_highest_version(local_tags)
 
 
-    if latest_tags is None:
+    if latest_local_tag is None:
         raise GitPushError("Failed to push to remote, No local tag found.")
-
-    if (latest := f"v{latest_tags}") in local_tags:
-        latest_tags = latest
-    elif (latest := f"{latest_tags}") in unpush_tags:
-        latest_tags = latest
-
 
     pending_tags: list[str] = []
     # If using --all flag
@@ -89,17 +85,17 @@ def do_push(request: PushRequest):
         pending_tags.extend(ver for ver in request.tags if ver in unpush_tags)
 
     # If user doesn't input any tag, auto use latest lag
-    elif latest_tags in unpush_tags:
-        pending_tags.append(latest)
+    elif latest_local_tag in unpush_tags:
+        pending_tags.append(latest_local_tag)
 
     if not pending_tags:
         if request.tags:
             print(f"Already on {remote_name}: {', '.join(request.tags)}")
         else:
-            print(f"Nothing to push: {latest_tags} (highest tag) is already exist on {remote_name}.")
+            print(f"Nothing to push: {latest_local_tag} (highest tag) already exists on {remote_name}.")
             if unpush_tags:
                 print(f"{len(unpush_tags)} other local tag(s) are not in {remote_name} yet: {', '.join(unpush_tags)}")
-                print(f"{Color.BLUE}HINT: Use 'git-version-sync push --all' to send them, or 'push <tag> ...' to choose.")
+                print(f"{Color.BLUE}Hint: Use 'git-version-sync push --all' to send them, or 'push <tag> ...' to choose.")
         return
 
     if request.push_latest:

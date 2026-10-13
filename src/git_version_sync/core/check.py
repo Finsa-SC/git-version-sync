@@ -8,20 +8,21 @@ from git_version_sync.core.git import get_remote_tags, get_local_tags, check_rem
 from git_version_sync.utils import get_config_version, Color
 
 
-def parse_highest_version(*items: Iterable[str|Version]) -> Version:
+def parse_highest_version(*items: Iterable[str]) -> str|None:
     tags = set().union(*items)
-    valid_version: list[Version] = []
+    version_map = {}
     for tag in tags:
         try:
-            if isinstance(tag, str):
-                clean_tag = tag.removeprefix("v")
-                valid_version.append(Version(clean_tag))
-            else:
-                valid_version.append(tag)
+            has_prefix = tag.startswith("v")
+            version_map[Version(tag)] = {"version": tag, "has_prefix": has_prefix}
         except Exception:
             continue
 
-    return max(valid_version, key=lambda ver: ver)
+    highest = max(version_map.keys())
+
+    if highest:
+        return version_map[highest]['version']
+    return None
 
 def get_config_tag(config_path: Path) -> Version:
     config_parser = get_config_parser(config_path)
@@ -83,7 +84,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     # Validate local tags
     highest_local_version = parse_highest_version(local_tags)
     if highest_local_version is None:
-        return "No local tags found."
+        return 1, "No local tags found."
 
     config_version = get_config_version(config_name)
     all_match = is_all_config_match(config_version)
@@ -100,7 +101,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
             )
 
         else:
-            return 1, get_config_mismatch_str(config_version, highest_local_version)
+            return 1, get_config_mismatch_str(config_version, Version(highest_local_version))
 
     output = []
 
@@ -116,7 +117,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
 
     else:
         status_code = 1
-        config_msg = get_config_mismatch_str(config_version, highest_local_version)
+        config_msg = get_config_mismatch_str(config_version, Version(highest_local_version))
         output.append("")
         output.append(config_msg)
 

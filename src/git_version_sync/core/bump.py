@@ -122,7 +122,7 @@ def do_bump(request: BumpRequest) -> str:
         )
 
     config_version = get_config_version(request.config_path)
-    config_tag = parse_highest_version(set(config_version.values()))
+    config_tag = parse_highest_version(set(f"{config_version.values()}"))
     with_prefix = "" if request.no_prefix else "v"
 
     # Get default remote if use push or remote flag
@@ -136,7 +136,8 @@ def do_bump(request: BumpRequest) -> str:
 
         remote_tags = get_remote_tags(remote_name=remote_name)
 
-        highest_local_tag = parse_highest_version(local_tags)
+        highest_local_tag_str = parse_highest_version(local_tags)
+        highest_local_tag = Version(highest_local_tag_str)
         highest_overall_tag = parse_highest_version(local_tags | remote_tags)
 
         all_match = is_all_config_match(config_version)
@@ -156,11 +157,11 @@ def do_bump(request: BumpRequest) -> str:
 
         base_version = max(
             Version(v)
-            for v in [str(config_tag), str(highest_local_tag), str(highest_overall_tag)]
+            for v in [str(config_tag), highest_local_tag_str, str(highest_overall_tag)]
             if v is not None
         )
     else:
-        base_version = parse_highest_version(local_tags | {config_tag})
+        base_version = Version(parse_highest_version(local_tags | {config_tag}))
 
     str_version = f"{with_prefix}{base_version}"
     # if run without bump type, will be interactive
