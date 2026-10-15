@@ -31,11 +31,12 @@ def get_previous_tag(target_version: Version, local_tags: set[str]) -> Version|N
     return max(previous_tag)
 
 # Return semver and non-semver
-def seperate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
+def separate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
     semver = set()
     non_semver = set()
     for tag in tag_list:
         try:
+            Version(tag)
             semver.add(tag)
         except InvalidVersion:
             non_semver.add(tag)
