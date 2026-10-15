@@ -7,14 +7,14 @@ from git_version_sync.core.git import (
     get_tag_commit,
     get_head_commit,
     reset_soft_head,
-    get_remote_tags, get_local_tags, has_remote
+    get_remote_tags, get_local_tags, has_remote, set_latest_tag
 )
 from git_version_sync.exception import GitRemoteError, GitVersionSyncError
 from git_version_sync.models import UndoRequest
 from git_version_sync.utils import get_config_version
 
 
-def get_previous_version(version_list: set[str]) -> Version|None:
+def get_previous_version(version_list: set[str]) -> str|None:
     versions_map = {}
 
     for ver in version_list:
@@ -43,7 +43,7 @@ def do_undo(request: UndoRequest) -> None:
     local_tags = get_local_tags()
     latest_tag = parse_highest_version(local_tags)
 
-    if latest_tag is None:
+    if not latest_tag:
         raise GitVersionSyncError("No local tag found.")
 
     target_tag = request.undo_tag if request.undo_tag else latest_tag
@@ -56,7 +56,7 @@ def do_undo(request: UndoRequest) -> None:
         remote_info = " and REMOTE" if request.remote_name else ""
         confirm = input(f"Are you sure you want to undo tag {target_tag} (LOCAL{remote_info}) and revert to {previous_version}? [y/N]: ").strip().lower()
         print()
-        if confirm not in ["y", "yes", "yeah", "ye", "yee"]:
+        if confirm not in ("y", "yes", "yeah", "ye", "yee"):
             print("Undo operation canceled.")
             return
 
@@ -70,11 +70,16 @@ def do_undo(request: UndoRequest) -> None:
 
         if previous_version:
             for config_path in config_version.keys():
-                bump_config_version(previous_version, config_path)
+                bump_config_version(Version(previous_version), config_path)
 
                 print(f"Reverted {config_path.name} version to '{previous_version}'.")
         else:
             print(f"Skipped config revert (no previous tag found).")
+
+        # Undo latest tag if exists
+        if previous_version and 'latest' in local_tags:
+            set_latest_tag(previous_version)
+            print(f"Rolled back 'latest' tag to previous version '{previous_version}'.")
 
     else:
         print(f"Tag {target_tag} is not the latest version (current: {latest_tag}).")
@@ -91,8 +96,9 @@ def do_undo(request: UndoRequest) -> None:
     print(f"Deleted local tag '{target_tag}'.")
 
     # Check deleted tag in remote
-    remote_tags = get_remote_tags()
-    if not request.remote_name and (f"{target_tag}" in remote_tags or str(target_tag) in remote_tags):
-        print(f"Note: {target_tag} still exists on remote. Run with '-R' to delete it from remote.")
+    if has_remote(request.remote_name):
+        remote_tags = get_remote_tags()
+        if not request.remote_name and (f"{target_tag}" in remote_tags or str(target_tag) in remote_tags):
+            print(f"Note: {target_tag} still exists on remote. Run with '-R' to delete it from remote.")
 
     print(f"\nSuccessfully reverted version from '{latest_tag}' -> '{previous_version}'")

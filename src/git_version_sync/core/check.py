@@ -5,7 +5,7 @@ from packaging.version import Version
 
 from git_version_sync.config_handlers import get_config_parser
 from git_version_sync.core.git import get_remote_tags, get_local_tags, check_remote_connection, has_remote
-from git_version_sync.utils import get_config_version, Color
+from git_version_sync.utils import get_config_version
 from git_version_sync.utils import warning, info
 
 
