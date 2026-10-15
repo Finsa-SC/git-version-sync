@@ -6,6 +6,7 @@ from packaging.version import Version
 from git_version_sync.config_handlers import get_config_parser
 from git_version_sync.core.git import get_remote_tags, get_local_tags, check_remote_connection, has_remote
 from git_version_sync.utils import get_config_version, Color
+from git_version_sync.utils import warning, info
 
 
 def parse_highest_version(*items: Iterable[str]) -> str|None:
@@ -75,7 +76,7 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     # Check if remote is enable and skip remote if remote cannot be reach
     if not no_fetch:
         if not has_remote(remote_name):
-            print(f"{Color.YELLOW}Warning: Remote '{remote_name}' not found. Skipping remote check.{Color.WHITE}")
+            warning(f"Warning: Remote '{remote_name}' not found. Skipping remote check.")
             skip_remote = True
 
         else:
@@ -139,11 +140,16 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
 
             ## Warning and hint if local and remote tag is not valid
             if missing_in_local:
+                warn_msg = warning("Warning: Local version is behind remote.")
+                hint_msg = info(
+                    "Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes.")
+
                 output.append(
-                    f"\n{Color.YELLOW}Warning: Local version is behind remote.{Color.WHITE}"
-                    f"\n{Color.BLUE}Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes.{Color.WHITE}"
+                    f"\n{warn_msg}"
+                    f"\n{hint_msg}"
                 )
+
             elif missing_in_remote:
-                output.append(f"\n{Color.BLUE}Hint: Run 'git-version-sync push' to sync local tags to remote.{Color.WHITE}")
+                output.append(info(f"\nHint: Run 'git-version-sync push' to sync local tags to remote."))
 
     return status_code, "\n".join(output)
