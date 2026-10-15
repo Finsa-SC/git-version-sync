@@ -24,7 +24,6 @@ def get_current_remote() -> str:
             ['git', 'config', '--get', f'branch.{current_branch}.remote'],
             capture_output=True,
             text=True,
-            check=True
         )
         return remote_res.stdout.strip() or "origin"
 
