@@ -27,7 +27,7 @@ def sync_version(
         if highest_local_tag:
             for config_path in config_version.keys():
                 bump_config_version(highest_local_tag, config_path)
-                str_highest_local = f"{highest_local_tag}" if request.no_prefix else f"v{highest_local_tag}"
+                str_highest_local = f"{highest_local_tag}" if request.no_prefix else f"{highest_local_tag}"
                 print(f"Synced {config_path.name} version to match Git tag {str_highest_local}.")
 
         else:
@@ -110,7 +110,7 @@ def do_sync(request: SyncRequest) -> None:
     if not local_tags:
         print("No local git tag found.")
         bump_git_tag(config_tag)
-        print(f"Synced version from config file. Created tag: v{config_tag}")
+        print(f"Synced version from config file. Created tag: {config_tag}")
         return
 
     highest_local_tag = Version(parse_highest_version(local_tags))
@@ -122,7 +122,7 @@ def do_sync(request: SyncRequest) -> None:
 
 
     elif Version(config_tag) == highest_local_tag and len(unique_version) == 1:
-        print(f"Already in sync at (v{config_tag})")
+        print(f"Already in sync at ({config_tag})")
         return
 
     else:
