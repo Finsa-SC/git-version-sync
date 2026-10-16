@@ -15,3 +15,6 @@ class ConfigFileVersionError(GitVersionSyncError):
 
 class GitRemoteError(GitVersionSyncError):
     ...
+
+class LocalTagNotFoundError(GitVersionSyncError):
+    ...

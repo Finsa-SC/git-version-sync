@@ -9,7 +9,7 @@ from git_version_sync.core.git import (
     reset_mixed_head,
     get_remote_tags, get_local_tags, has_remote, set_latest_tag
 )
-from git_version_sync.exception import GitRemoteError, GitVersionSyncError
+from git_version_sync.exception import GitRemoteError, GitVersionSyncError, LocalTagNotFoundError
 from git_version_sync.models import UndoRequest
 from git_version_sync.utils import get_config_version
 
@@ -46,7 +46,13 @@ def do_undo(request: UndoRequest) -> None:
     if not latest_tag:
         raise GitVersionSyncError("No local tag found.")
 
-    target_tag = request.undo_tag if request.undo_tag else latest_tag
+    use_latest = bool(not request.undo_tag)
+    target_tag = request.undo_tag if not use_latest else latest_tag
+
+    # Validate user input target tag is exist
+    if not use_latest and target_tag not in local_tags:
+        raise LocalTagNotFoundError(f"Tag {target_tag} does not exist in local repository.")
+
     is_latest = (target_tag == latest_tag)
 
     previous_version = get_previous_version(local_tags)
