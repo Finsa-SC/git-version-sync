@@ -213,8 +213,8 @@ def get_head_commit() -> str | None:
     except subprocess.CalledProcessError:
         return None
 
-def reset_soft_head() -> None:
-    command = ["git", "reset", "--soft", "HEAD~1"]
+def reset_mixed_head() -> None:
+    command = ["git", "reset", "--mixed", "HEAD~1"]
 
     try:
         subprocess.run(

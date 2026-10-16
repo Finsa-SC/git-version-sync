@@ -6,7 +6,7 @@ from git_version_sync.core.git import (
     delete_remote_tag,
     get_tag_commit,
     get_head_commit,
-    reset_soft_head,
+    reset_mixed_head,
     get_remote_tags, get_local_tags, has_remote, set_latest_tag
 )
 from git_version_sync.exception import GitRemoteError, GitVersionSyncError
@@ -65,7 +65,7 @@ def do_undo(request: UndoRequest) -> None:
         head_commit = get_head_commit()
 
         if tag_commit and tag_commit == head_commit:
-            reset_soft_head()
+            reset_mixed_head()
             print("Reset last git commit.")
 
         if previous_version:
