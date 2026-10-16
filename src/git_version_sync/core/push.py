@@ -61,7 +61,7 @@ def do_push(request: PushRequest):
     pending_tags: list[str] = []
     # If using --all flag
     if request.push_all:
-        semver_tags, non_semver_tags = seperate_non_semver(unpush_tags)
+        semver_tags, non_semver_tags = separate_non_semver(unpush_tags)
         pending_tags.extend(semver_tags)
         pending_tags.extend(non_semver_tags)
 
