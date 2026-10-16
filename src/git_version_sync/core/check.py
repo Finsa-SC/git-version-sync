@@ -112,10 +112,11 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
     missing_in_remote = get_missing_in_remote_tags(remote_tags, local_tags)
 
     # If highest local tag match with config version
-    if Version(highest_local_version) == config_tag and not (missing_in_local or missing_in_remote):
+    if Version(highest_local_version) == config_tag:
         status_code = 0
         output.append(f"Version ({config_tag}) is synchronized with local tag '{highest_local_version}'.")
 
+    # Return mismatch details
     else:
         status_code = 1
         config_msg = get_config_mismatch_str(config_version, Version(highest_local_version))
@@ -126,25 +127,27 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
             highest_remote_str = highest_remote if highest_remote else 'unknown'
             output.append(f"Remote\t\t\t: {highest_remote_str}")
 
-            if missing_in_remote:
-                output.append(f"\nPending Remote Sync ({remote_name}):")
-                for tag in sorted(missing_in_remote):
-                    output.append(f"  - {tag}")
+    # Check mismatch between local and remote
+    if not skip_remote:
+        if missing_in_remote:
+            output.append(f"\nPending Remote Sync ({remote_name}):")
+            for tag in sorted(missing_in_remote):
+                output.append(f"  - {tag}")
 
-            if missing_in_local:
-                output.append(f"\nNew tag(s) found on remote ({remote_name}): ")
-                for tag in sorted(missing_in_local):
-                    clean_tag = tag.removeprefix('v')
-                    output.append(f"  - {clean_tag}")
+        if missing_in_local:
+            output.append(f"\nNew tag(s) found on remote ({remote_name}): ")
+            for tag in sorted(missing_in_local):
+                clean_tag = tag.removeprefix('v')
+                output.append(f"  - {clean_tag}")
 
-            ## Warning and hint if local and remote tag is not valid
-            if missing_in_local:
-                output.append(
-                    f"{Color.YELLOW}Warning: Local version is behind remote.{Color.RESET}"
-                    f"{Color.BLUE}Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes.{Color.RESET}"
-                )
+        ## Warning and hint if local and remote tag is not valid
+        if missing_in_local:
+            output.append(
+                f"{Color.YELLOW}Warning: Local version is behind remote.{Color.RESET}"
+                f"{Color.BLUE}Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes.{Color.RESET}"
+            )
 
-            elif missing_in_remote:
-                output.append(f"{Color.BLUE}\nHint: Run 'git-version-sync push' to sync local tags to remote.{Color.RESET}")
+        elif missing_in_remote:
+            output.append(f"{Color.BLUE}\nHint: Run 'git-version-sync push' to sync local tags to remote.{Color.RESET}")
 
     return status_code, "\n".join(output)
