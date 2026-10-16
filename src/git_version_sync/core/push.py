@@ -7,7 +7,7 @@ from .git import (
     fetch_remote_tags,
     get_commit_since_tag,
     create_github_release,
-    get_local_tags, get_current_remote
+    get_local_tags, get_current_remote, set_latest_tag
 )
 from ..exception import GitPushError
 from ..models import PushRequest
@@ -100,6 +100,8 @@ def do_push(request: PushRequest):
         return
 
     if request.push_latest:
+        set_latest_tag(latest_local_tag)
+        print("Update the 'latest' local tag.")
         pending_tags.append('latest')
 
     print(f"Pushing tag(s) to remote: {', '.join(f'{ver}' for ver in pending_tags)}")
