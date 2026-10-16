@@ -116,7 +116,9 @@ def do_push(request: PushRequest):
     if request.release is not None:
         for target_version in pending_tags:
             # Skip non semver
-            if isinstance(target_version, str):
+            try:
+                Version(target_version)
+            except InvalidVersion:
                 continue
 
             if request.release.strip():
@@ -126,5 +128,5 @@ def do_push(request: PushRequest):
                 commits = get_commit_since_tag(prev_tag, target_version)
                 change_log = generate_changelog(commits)
 
-            print(f"Created GitHub Release for v{target_version}")
+            print(f"Created GitHub Release for {target_version}")
             create_github_release(target_version, change_log)
