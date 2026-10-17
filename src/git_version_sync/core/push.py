@@ -49,7 +49,7 @@ def separate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
 
 def do_push(request: PushRequest):
     # Check gh-cli if using release flag
-    if request.release is not None and is_gh_accessible():
+    if request.release is not None and not is_gh_accessible():
         raise GitCommandError(
             f"GitHub CLI ('gh') is unavailable or not authenticated.\n"
             f"{Color.BLUE}Hint: Ensure GitHub CLI is installed and run 'gh auth login'."
