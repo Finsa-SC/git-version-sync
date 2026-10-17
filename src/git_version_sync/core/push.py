@@ -47,7 +47,7 @@ def is_latest_up_to_date(highest_tag: str, remote: str = "origin") -> bool:
     target_hash = get_tag_commit_hash(highest_tag)
     try:
         remote_hash = get_remote_tag_commit_hash("latest", remote)
-    except GitRemoteError:
+    except GitVersionSyncError:
         return False
     return target_hash == remote_hash
 
@@ -114,14 +114,16 @@ def do_push(request: PushRequest):
             print("Update the 'latest' local tag.")
             force_tags.append('latest')
 
+    pending_tags = [tag for tag in pending_tags if tag not in force_tags]
+
     print(f"Pushing tag(s) to remote: {', '.join(f'{ver}' for ver in pending_tags)}")
     push_to_remote(pending_tags, remote_name, force_tags=force_tags)
 
-    number_of_tag = len(pending_tags)
+    number_of_tag = len(pending_tags + force_tags)
     if number_of_tag > 1:
         print(f"Pushed: {number_of_tag} tags to {remote_name}.")
     else:
-        print(f"Pushed: {pending_tags[0]} -> {remote_name}.")
+        print(f"Pushed: {pending_tags[0] if len(pending_tags) > 0 else force_tags[0]} -> {remote_name}.")
 
     if request.release is not None:
         for target_version in pending_tags:
