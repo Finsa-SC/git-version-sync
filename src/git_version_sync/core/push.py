@@ -99,6 +99,7 @@ def do_push(request: PushRequest):
                 print(f"{Color.BLUE}Hint: Use 'git-version-sync push --all' to send them, or 'push <tag> ...' to choose.")
         return
 
+    # Latest tag logic
     force_tags = []
     if request.push_latest:
         if is_latest_up_to_date_with_local(latest_local_tag) and is_highest_up_to_date_with_remote(latest_local_tag, remote_name):
