@@ -9,6 +9,7 @@ from .git import (
     create_github_release,
     get_local_tags, get_current_remote, set_latest_tag, get_tag_commit_hash, get_remote_tag_commit_hash
 )
+from .latest import is_highest_up_to_date_with_remote, is_latest_up_to_date_with_local
 from ..exception import GitPushError, GitCommandError, GitVersionSyncError, GitRemoteError
 from ..models import PushRequest
 from ..utils import Color
@@ -43,13 +44,6 @@ def separate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
 
     return semver, non_semver
 
-def is_latest_up_to_date(highest_tag: str, remote: str = "origin") -> bool:
-    target_hash = get_tag_commit_hash(highest_tag)
-    try:
-        remote_hash = get_remote_tag_commit_hash("latest", remote)
-    except GitVersionSyncError:
-        return False
-    return target_hash == remote_hash
 
 def do_push(request: PushRequest):
     remote_name = request.remote_name if request.remote_name else get_current_remote()
@@ -107,8 +101,8 @@ def do_push(request: PushRequest):
 
     force_tags = []
     if request.push_latest:
-        if is_latest_up_to_date(latest_local_tag, remote_name):
-            print(f"'latest' is already up to date ({latest_local_tag}).")
+        if is_latest_up_to_date_with_local(latest_local_tag) and is_highest_up_to_date_with_remote(remote_name):
+            print(f"'latest' is already up to date ({latest_local_tag}) with {remote_name}.")
         else:
             set_latest_tag(latest_local_tag)
             print("Update the 'latest' local tag.")
