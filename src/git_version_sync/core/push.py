@@ -7,9 +7,9 @@ from .git import (
     fetch_remote_tags,
     get_commit_since_tag,
     create_github_release,
-    get_local_tags, get_current_remote, set_latest_tag
+    get_local_tags, get_current_remote, set_latest_tag, get_tag_commit_hash, get_remote_tag_commit_hash
 )
-from ..exception import GitPushError
+from ..exception import GitPushError, GitCommandError, GitVersionSyncError, GitRemoteError
 from ..models import PushRequest
 from ..utils import Color
 
@@ -43,7 +43,13 @@ def separate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
 
     return semver, non_semver
 
-# def confirm_latest_update(remote_tags: set[str], local_tags: set[str]):
+def is_latest_up_to_date(highest_tag: str, remote: str = "origin") -> bool:
+    target_hash = get_tag_commit_hash(highest_tag)
+    try:
+        remote_hash = get_remote_tag_commit_hash("latest", remote)
+    except GitRemoteError:
+        return False
+    return target_hash == remote_hash
 
 def do_push(request: PushRequest):
     remote_name = request.remote_name if request.remote_name else get_current_remote()
@@ -99,13 +105,17 @@ def do_push(request: PushRequest):
                 print(f"{Color.BLUE}Hint: Use 'git-version-sync push --all' to send them, or 'push <tag> ...' to choose.")
         return
 
+    force_tags = []
     if request.push_latest:
-        set_latest_tag(latest_local_tag)
-        print("Update the 'latest' local tag.")
-        pending_tags.append('latest')
+        if is_latest_up_to_date(latest_local_tag, remote_name):
+            print(f"'latest' is already up to date ({latest_local_tag}).")
+        else:
+            set_latest_tag(latest_local_tag)
+            print("Update the 'latest' local tag.")
+            force_tags.append('latest')
 
     print(f"Pushing tag(s) to remote: {', '.join(f'{ver}' for ver in pending_tags)}")
-    push_to_remote(pending_tags, remote_name)
+    push_to_remote(pending_tags, remote_name, force_tags=force_tags)
 
     number_of_tag = len(pending_tags)
     if number_of_tag > 1:
