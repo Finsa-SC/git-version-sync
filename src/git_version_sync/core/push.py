@@ -68,22 +68,28 @@ def do_push(request: PushRequest):
         raise GitPushError("Failed to push to remote, No local tag found.")
 
     pending_tags: list[str] = []
+    release_tags: list[str] = []
+
     # If using --all flag
     if request.push_all:
         semver_tags, non_semver_tags = separate_non_semver(unpush_tags)
         pending_tags.extend(semver_tags)
         pending_tags.extend(non_semver_tags)
 
+        release_tags += unpush_tags
+
     # If user input tag(s) manually
     elif request.tags:
         unknown_tags = set(request.tags) - unpush_tags
 
-        tag_not_exists = False
         # Validate invalid tags
+        tag_not_exists = False
         for tag in unknown_tags:
             if tag not in local_tags:
                 tag_not_exists = True
                 break
+            else:
+                release_tags.append(tag)
 
         is_valid = len(unknown_tags) > 0
         if is_valid and tag_not_exists:
@@ -97,6 +103,7 @@ def do_push(request: PushRequest):
     # If user doesn't input any tag, auto use latest lag
     elif latest_local_tag in unpush_tags:
         pending_tags.append(latest_local_tag)
+        release_tags.append(latest_local_tag)
 
     if not pending_tags and not request.push_latest:
         if request.tags:
@@ -134,7 +141,7 @@ def do_push(request: PushRequest):
         print(f"Pushed: {pushed[0]} -> {remote_name}.")
 
     if request.release is not None:
-        for target_version in pending_tags:
+        for target_version in release_tags:
             # Skip non semver
             try:
                 Version(target_version)
@@ -148,5 +155,5 @@ def do_push(request: PushRequest):
                 commits = get_commit_since_tag(prev_tag, target_version)
                 change_log = generate_changelog(commits)
 
-            print(f"Created GitHub Release for {target_version}")
             create_github_release(target_version, change_log)
+            print(f"Created GitHub Release for {target_version}")
