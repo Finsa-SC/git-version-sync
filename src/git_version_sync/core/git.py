@@ -1,5 +1,5 @@
 import os
-import subprocess, shutil
+import subprocess
 from collections.abc import Iterable
 from pathlib import Path
 from packaging.version import Version
@@ -16,12 +16,12 @@ def get_current_remote() -> str:
             text=True,
             check=True
         )
-        current_branch = branch_res.stdout.strip()
-        if not current_branch:
+        curr_branch = branch_res.stdout.strip()
+        if not curr_branch:
             return "origin" # Default fallback if detached HEAD
 
         remote_res = subprocess.run(
-            ['git', 'config', '--get', f'branch.{current_branch}.remote'],
+            ['git', 'config', '--get', f'branch.{curr_branch}.remote'],
             capture_output=True,
             text=True,
         )
@@ -118,9 +118,6 @@ def fetch_remote_tags(remote_name: str = "origin", skip=("latest",)):
 
 def create_github_release(tag_name: str, message: str | None=None, draft: bool=False) -> None:
     command = ['gh', 'release', 'create', tag_name, '--generate-notes']
-
-    if not shutil.which('gh'):
-        raise GitCommandError("Github CLI ('gh') not installed yet, please install 'gh' first.")
 
     if message and message.strip():
         command.extend(['--notes', message])

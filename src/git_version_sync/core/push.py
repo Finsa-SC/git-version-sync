@@ -1,3 +1,5 @@
+import shutil
+
 from packaging.version import Version, InvalidVersion
 
 from .changelog import generate_changelog
@@ -44,8 +46,11 @@ def separate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
 
     return semver, non_semver
 
-
 def do_push(request: PushRequest):
+    # Check gh-cli if using release flag
+    if request.release is not None and not shutil.which('gh'):
+        raise GitCommandError("Github CLI ('gh') not installed yet, please install 'gh' first.")
+
     remote_name = request.remote_name if request.remote_name else get_current_remote()
     fetch_remote_tags(remote_name)
 
