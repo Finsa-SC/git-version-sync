@@ -58,6 +58,15 @@ def commit_config_change(new_version: str, config_version: dict[Path,Version]) -
         error_msg = clean_git_error(e)
         raise GitCommandError(f"Git commit {Color.RED}Failed: \n{error_msg}") from e
 
+def current_branch() -> str | None:
+    command = ['git', 'symbolic-ref', '-q', '--short', 'HEAD']
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True
+    )
+    return result.stdout.strip() if result.returncode == 0 else None
+
 def push_to_remote(
         new_version: Iterable[str],
         remote_name: str = 'origin',
@@ -65,12 +74,11 @@ def push_to_remote(
         force_tags: Iterable[str]=()
 ) -> None:
     try:
-        command = [
-            'git', 'push', '--atomic',
-            remote_name, 'HEAD',
-            *new_version,
-            *(f"+refs/tags/{tag}" for tag in force_tags)
-        ]
+        command = ['git', 'push', '--atomic', remote_name]
+        branch = current_branch()
+        if branch:
+            command.append(branch)
+        command += [*new_version, *(f"+refs/tags/{tag}" for tag in force_tags)]
 
         if force:
             command.append("-f")

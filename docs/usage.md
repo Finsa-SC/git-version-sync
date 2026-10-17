@@ -191,7 +191,7 @@ $ git-version-sync bump patch --dry-run
 
 ### Push
 
-Push Git tags to a remote.
+Push Git tags to a remote, and Tags that already exist on the remote are reported and skipped, this is not an error
 
 ```bash
 git-version-sync push [TAGS...]
