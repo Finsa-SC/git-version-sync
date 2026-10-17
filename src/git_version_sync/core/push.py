@@ -89,7 +89,7 @@ def do_push(request: PushRequest):
     elif latest_local_tag in unpush_tags:
         pending_tags.append(latest_local_tag)
 
-    if not pending_tags:
+    if not pending_tags and not request.push_latest:
         if request.tags:
             print(f"Already on {remote_name}: {', '.join(request.tags)}")
         else:
@@ -101,7 +101,7 @@ def do_push(request: PushRequest):
 
     force_tags = []
     if request.push_latest:
-        if is_latest_up_to_date_with_local(latest_local_tag) and is_highest_up_to_date_with_remote(remote_name):
+        if is_latest_up_to_date_with_local(latest_local_tag) and is_highest_up_to_date_with_remote(latest_local_tag, remote_name):
             print(f"'latest' is already up to date ({latest_local_tag}) with {remote_name}.")
         else:
             set_latest_tag(latest_local_tag)
