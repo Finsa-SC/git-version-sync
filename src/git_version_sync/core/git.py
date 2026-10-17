@@ -79,7 +79,7 @@ def push_to_remote(new_version: Iterable[str], remote_name: str = 'origin', forc
         error_msg = clean_git_error(e)
         raise GitPushError(f"{Color.RED}Failed to push to remote: \n{error_msg}") from e
 
-def fetch_remote_tags(remote_name: str = "origin"):
+def fetch_remote_tags(remote_name: str = "origin", skip=("latest",)):
     # Validate git structure
     get_git_path()
     if not has_remote(remote_name):
@@ -88,7 +88,8 @@ def fetch_remote_tags(remote_name: str = "origin"):
             f"{Color.BLUE}Hint: Add a remote using 'git remote add {remote_name} <url>'"
         )
 
-    command = ['git', 'fetch', '--tags', '--force', remote_name]
+    command = ['git', 'fetch', '--force', remote_name, '+refs/tags/*:refs/tags/*']
+    command += [f"^refs/tags/{tag}" for tag in skip]
 
     try:
         subprocess.run(
