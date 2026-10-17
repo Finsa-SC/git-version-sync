@@ -122,7 +122,7 @@ def do_push(request: PushRequest):
     if len(pushed) > 1:
         print(f"Pushed: {len(pushed)} tags to {remote_name}.")
     else:
-        print(f"Pushed: {pushed} -> {remote_name}.")
+        print(f"Pushed: {pushed[0]} -> {remote_name}.")
 
     if request.release is not None:
         for target_version in pending_tags:

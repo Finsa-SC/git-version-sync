@@ -10,7 +10,10 @@ def is_highest_up_to_date_with_remote(highest_tag: str, remote: str = "origin") 
     return get_tag_commit_hash(highest_tag) == remote_hash
 
 def is_latest_up_to_date_with_local(highest_tag: str) -> bool:
-    highest_hash = get_tag_commit_hash(highest_tag)
-    latest_hash = get_tag_commit_hash('latest')
+    try:
+        highest_hash = get_tag_commit_hash(highest_tag)
+        latest_hash = get_tag_commit_hash('latest')
+    except GitVersionSyncError:
+        return False
 
     return highest_hash == latest_hash
