@@ -66,7 +66,7 @@ def push_to_remote(
 ) -> None:
     try:
         command = [
-            'git', 'push',
+            'git', 'push', '--atomic',
             remote_name, 'HEAD',
             *new_version,
             *(f"+refs/tags/{tag}" for tag in force_tags)
