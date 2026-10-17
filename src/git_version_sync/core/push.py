@@ -119,11 +119,11 @@ def do_push(request: PushRequest):
     print(f"Pushing tag(s) to remote: {', '.join(f'{ver}' for ver in pending_tags)}")
     push_to_remote(pending_tags, remote_name, force_tags=force_tags)
 
-    number_of_tag = len(pending_tags + force_tags)
-    if number_of_tag > 1:
-        print(f"Pushed: {number_of_tag} tags to {remote_name}.")
+    pushed = [*pending_tags, *force_tags]
+    if len(pushed) > 1:
+        print(f"Pushed: {len(pushed)} tags to {remote_name}.")
     else:
-        print(f"Pushed: {pending_tags[0] if len(pending_tags) > 0 else force_tags[0]} -> {remote_name}.")
+        print(f"Pushed: {pushed[0]} -> {remote_name}.")
 
     if request.release is not None:
         for target_version in pending_tags:
