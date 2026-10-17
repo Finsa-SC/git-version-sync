@@ -1,5 +1,3 @@
-import shutil
-
 from packaging.version import Version, InvalidVersion
 
 from .changelog import generate_changelog
@@ -9,10 +7,13 @@ from .git import (
     fetch_remote_tags,
     get_commit_since_tag,
     create_github_release,
-    get_local_tags, get_current_remote, set_latest_tag, get_tag_commit_hash, get_remote_tag_commit_hash
+    get_local_tags,
+    get_current_remote,
+    set_latest_tag,
+    is_gh_accessible
 )
 from .latest import is_highest_up_to_date_with_remote, is_latest_up_to_date_with_local
-from ..exception import GitPushError, GitCommandError, GitVersionSyncError, GitRemoteError
+from ..exception import GitPushError, GitCommandError
 from ..models import PushRequest
 from ..utils import Color
 
@@ -48,8 +49,11 @@ def separate_non_semver(tag_list: set[str]) -> tuple[set[str], set[str]]:
 
 def do_push(request: PushRequest):
     # Check gh-cli if using release flag
-    if request.release is not None and not shutil.which('gh'):
-        raise GitCommandError("Github CLI ('gh') not installed yet, please install 'gh' first.")
+    if request.release is not None and is_gh_accessible():
+        raise GitCommandError(
+            f"GitHub CLI ('gh') is unavailable or not authenticated.\n"
+            f"{Color.BLUE}Hint: Ensure GitHub CLI is installed and run 'gh auth login'."
+        )
 
     remote_name = request.remote_name if request.remote_name else get_current_remote()
     fetch_remote_tags(remote_name)

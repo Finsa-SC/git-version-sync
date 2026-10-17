@@ -1,4 +1,5 @@
 import os
+import shutil
 import subprocess
 from collections.abc import Iterable
 from pathlib import Path
@@ -66,6 +67,16 @@ def current_branch() -> str | None:
         text=True
     )
     return result.stdout.strip() if result.returncode == 0 else None
+
+def is_gh_accessible() -> bool:
+    gh_installed = bool(shutil.which('gh'))
+
+    if gh_installed:
+        command = ['gh', 'auth', 'status']
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        return result.returncode == 0
+    return False
 
 def push_to_remote(
         new_version: Iterable[str],
