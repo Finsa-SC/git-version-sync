@@ -127,6 +127,15 @@ def fetch_remote_tags(remote_name: str = "origin", skip=("latest",)):
         error_msg = clean_git_error(e)
         raise GitCommandError(f"{Color.RED}Failed to fetch tags from remote: {error_msg}") from e
 
+def is_tag_already_has_release(tag: str) -> bool:
+    command = ["gh", "release", "view", tag]
+    result = subprocess.run(
+        command,
+        capture_output=True,
+        text=True
+    )
+    return result.returncode != 0
+
 def create_github_release(tag_name: str, message: str | None=None, draft: bool=False) -> None:
     command = ['gh', 'release', 'create', tag_name, '--generate-notes']
 
