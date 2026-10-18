@@ -3,7 +3,7 @@ from packaging.version import Version
 
 from .bump_detection import detect_bump_type, calculate_next_version
 from .undo import do_undo
-from .changelog import generate_changelog
+from .release import generate_changelog
 from .git import (
     commit_config_change,
     push_to_remote,

@@ -32,6 +32,7 @@ def do_push(request: PushRequest):
     latest_local_tag = parse_highest_version(local_tags)
 
     use_release = bool(request.release is not None)
+    requested_tags = []
 
     if latest_local_tag is None:
         raise GitPushError("Failed to push to remote, No local tag found.")
@@ -49,17 +50,17 @@ def do_push(request: PushRequest):
 
     # If user input tag(s) manually
     elif request.tags:
-        requested = list(dict.fromkeys(request.tags))
+        requested_tags = list(dict.fromkeys(request.tags))
 
-        missing_tags = [tag for tag in requested if tag not in local_tags]
+        missing_tags = [tag for tag in requested_tags if tag not in local_tags]
         if missing_tags:
             raise GitPushError(
                 f"Error: Tag(s) not found locally: {', '.join(missing_tags)}\n"
                 f"Nothing was pushed."
             )
 
-        pending_tags.extend(tag for tag in requested if tag in unpush_tags)
-        release_tags.extend(requested)
+        pending_tags.extend(tag for tag in requested_tags if tag in unpush_tags)
+        release_tags.extend(requested_tags)
 
     # If user doesn't input any tag, auto use latest lag
     elif latest_local_tag in unpush_tags:
@@ -95,7 +96,7 @@ def do_push(request: PushRequest):
     print(f"Pushing tag(s) to remote: {', '.join(f'{ver}' for ver in pending_tags)}")
     push_to_remote(pending_tags, remote_name, force_tags=force_tags)
 
-    pushed = [*pending_tags, *force_tags]
+    pushed = [*pending_tags, *force_tags, *requested_tags]
     if len(pushed) > 1:
         print(f"Pushed: {len(pushed)} tags to {remote_name}.")
     else:
