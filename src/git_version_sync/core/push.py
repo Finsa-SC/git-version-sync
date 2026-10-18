@@ -89,7 +89,7 @@ def do_push(request: PushRequest):
                 f"Nothing was pushed."
             )
 
-        pending_tags.extend(tag for tag in request.tags if tag in unpush_tags)
+        pending_tags.extend(tag for tag in requested if tag in unpush_tags)
         release_tags.extend(requested)
 
     # If user doesn't input any tag, auto use latest lag
