@@ -1,3 +1,29 @@
+from typing import Iterable
+
+from packaging.version import Version, InvalidVersion
+
+from git_version_sync.core.git import get_commit_since_tag, create_github_release
+from git_version_sync.core.tags import get_previous_tag
+
+
+def generate_release(release_tags: Iterable[str], local_tags: Iterable[str], notes: str = "") -> None:
+    for target_version in release_tags:
+        # Skip non semver
+        try:
+            Version(target_version)
+        except InvalidVersion:
+            continue
+
+        if notes.strip():
+            change_log = notes
+        else:
+            prev_tag = get_previous_tag(Version(target_version), set(local_tags))
+            commits = get_commit_since_tag(prev_tag, target_version)
+            change_log = generate_changelog(commits)
+
+        create_github_release(target_version, change_log)
+        print(f"Created GitHub Release for {target_version}")
+
 def generate_changelog(commits: list) -> str:
     categories = {
         "Breaking Changes": [],
