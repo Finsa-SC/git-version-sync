@@ -80,25 +80,17 @@ def do_push(request: PushRequest):
 
     # If user input tag(s) manually
     elif request.tags:
-        unknown_tags = set(request.tags) - unpush_tags
+        requested = list(dict.fromkeys(request.tags))
 
-        # Validate invalid tags
-        tag_not_exists = False
-        for tag in unknown_tags:
-            if tag not in local_tags:
-                tag_not_exists = True
-                break
-            else:
-                release_tags.append(tag)
-
-        is_valid = len(unknown_tags) > 0
-        if is_valid and tag_not_exists:
+        missing_tags = [tag for tag in requested if tag not in local_tags]
+        if missing_tags:
             raise GitPushError(
-                f"Error: Tag(s) not found locally: {', '.join(unknown_tags)}\n"
+                f"Error: Tag(s) not found locally: {', '.join(missing_tags)}\n"
                 f"Nothing was pushed."
             )
 
-        pending_tags.extend(ver for ver in request.tags if ver in unpush_tags)
+        pending_tags.extend(tag for tag in request.tags if tag in unpush_tags)
+        release_tags.extend(requested)
 
     # If user doesn't input any tag, auto use latest lag
     elif latest_local_tag in unpush_tags:
