@@ -104,4 +104,10 @@ def do_push(request: PushRequest):
         print(f"Pushed: {pushed[0]} -> {remote_name}.")
 
     if use_release:
-        generate_release(release_tags, local_tags, notes=request.release if request.release else "")
+        for tag in release_tags:
+            generate_release(
+                tag,
+                local_tags,
+                notes=request.release if request.release else "",
+                check_release=bool(tag in pending_tags)
+            )

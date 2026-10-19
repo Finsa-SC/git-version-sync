@@ -7,31 +7,30 @@ from git_version_sync.core.tags import get_previous_tag
 
 
 def generate_release(
-        release_tags: Iterable[str],
+        target_tag: str,
         local_tags: Iterable[str],
         notes: str = "",
         check_release: bool = False
 ) -> None:
-    for target_tag in release_tags:
-        # Skip non semver
-        try:
-            Version(target_tag)
-        except InvalidVersion:
-            continue
+    # Skip non semver
+    try:
+        Version(target_tag)
+    except InvalidVersion:
+        return
 
-        # Skip creating release if tag already has release version
-        if check_release and is_tag_already_has_release(target_tag):
-            continue
+    # Skip creating release if tag already has release version
+    if check_release and is_tag_already_has_release(target_tag):
+        return
 
-        if notes.strip():
-            change_log = notes
-        else:
-            prev_tag = get_previous_tag(Version(target_tag), set(local_tags))
-            commits = get_commit_since_tag(prev_tag, target_tag)
-            change_log = generate_changelog(commits)
+    if notes.strip():
+        change_log = notes
+    else:
+        prev_tag = get_previous_tag(Version(target_tag), set(local_tags))
+        commits = get_commit_since_tag(prev_tag, target_tag)
+        change_log = generate_changelog(commits)
 
-        create_github_release(target_tag, change_log)
-        print(f"Created GitHub Release for {target_tag}")
+    create_github_release(target_tag, change_log)
+    print(f"Created GitHub Release for {target_tag}")
 
 def generate_changelog(commits: list) -> str:
     categories = {
