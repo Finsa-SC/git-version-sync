@@ -63,8 +63,9 @@ def do_push(request: PushRequest):
         release_tags.extend(requested_tags)
 
     # If user doesn't input any tag, auto use latest lag
-    elif latest_local_tag in unpush_tags:
-        pending_tags.append(latest_local_tag)
+    else:
+        if latest_local_tag in unpush_tags:
+            pending_tags.append(latest_local_tag)
         release_tags.append(latest_local_tag)
 
     if not pending_tags and not request.push_latest and not use_release:
@@ -97,11 +98,11 @@ def do_push(request: PushRequest):
         print(f"Pushing tag(s) to remote: {', '.join(f'{ver}' for ver in [*pending_tags, *force_tags])}")
         push_to_remote(pending_tags, remote_name, force_tags=force_tags)
 
-    pushed = [*pending_tags, *force_tags, *requested_tags]
-    if len(pushed) > 1:
-        print(f"Pushed: {len(pushed)} tags to {remote_name}.")
-    else:
-        print(f"Pushed: {pushed[0]} -> {remote_name}.")
+        pushed = [*pending_tags, *force_tags, *requested_tags]
+        if len(pushed) > 1:
+            print(f"Pushed: {len(pushed)} tags to {remote_name}.")
+        else:
+            print(f"Pushed: {pushed[0]} -> {remote_name}.")
 
     if use_release:
         for tag in release_tags:
@@ -109,5 +110,5 @@ def do_push(request: PushRequest):
                 tag,
                 local_tags,
                 notes=request.release if request.release else "",
-                check_release=bool(tag in pending_tags)
+                check_release=bool(tag not in pending_tags)
             )

@@ -20,6 +20,7 @@ def generate_release(
 
     # Skip creating release if tag already has release version
     if check_release and is_tag_already_has_release(target_tag):
+        print(f"GitHub Release {target_tag} already exists. Skipping.")
         return
 
     if notes.strip():

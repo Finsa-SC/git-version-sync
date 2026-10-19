@@ -132,9 +132,10 @@ def is_tag_already_has_release(tag: str) -> bool:
     result = subprocess.run(
         command,
         capture_output=True,
-        text=True
+        text=True,
     )
-    return result.returncode != 0
+
+    return result.returncode == 0
 
 def create_github_release(tag_name: str, message: str | None=None, draft: bool=False) -> None:
     command = ['gh', 'release', 'create', tag_name, '--generate-notes']
