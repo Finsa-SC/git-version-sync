@@ -98,7 +98,7 @@ def do_push(request: PushRequest):
         print(f"Pushing tag(s) to remote: {', '.join(f'{ver}' for ver in [*pending_tags, *force_tags])}")
         push_to_remote(pending_tags, remote_name, force_tags=force_tags)
 
-        pushed = [*pending_tags, *force_tags, *requested_tags]
+        pushed = [*pending_tags, *force_tags]
         if len(pushed) > 1:
             print(f"Pushed: {len(pushed)} tags to {remote_name}.")
         else:
