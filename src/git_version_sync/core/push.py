@@ -32,7 +32,6 @@ def do_push(request: PushRequest):
     latest_local_tag = parse_highest_version(local_tags)
 
     use_release = bool(request.release is not None)
-    requested_tags = []
 
     if latest_local_tag is None:
         raise GitPushError("Failed to push to remote, No local tag found.")

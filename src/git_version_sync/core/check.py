@@ -137,13 +137,12 @@ def do_check(config_name: Path|None, no_fetch: bool=False, remote_name: str = "o
         if missing_in_local:
             output.append(f"\nNew tag(s) found on remote ({remote_name}): ")
             for tag in sorted(missing_in_local):
-                clean_tag = tag.removeprefix('v')
-                output.append(f"  - {clean_tag}")
+                output.append(f"  - {tag}")
 
         ## Warning and hint if local and remote tag is not valid
         if missing_in_local:
             output.append(
-                f"{Color.YELLOW}Warning: Local version is behind remote.{Color.RESET}"
+                f"\n{Color.YELLOW}Warning: Local version is behind remote.{Color.RESET}\n"
                 f"{Color.BLUE}Hint: Remote has newer tags/commits. Run 'git pull' (or 'git fetch --tags') before pushing local changes.{Color.RESET}"
             )
 
